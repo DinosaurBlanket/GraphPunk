@@ -24,10 +24,10 @@ int readFile(const char *path, string &out) {
 void glec(int line, const char *file) {
   GLenum GLstatus;
   while ((GLstatus = glGetError()) != GL_NO_ERROR) {
-    cout << "OpenGL error: " << GLstatus << " on line " << line << " in " << file << endl;
+    cout<<"OpenGL error: "<<GLstatus<<" on line "<<line<<" in "<<file<<endl;
   }
 }
-#define _glec glec(__LINE__, __FILE__)
+#define _glec glec(__LINE__, __FILE__);
 
 const char *shaderTypeString(GLuint st) {
   switch(st) {
@@ -42,24 +42,24 @@ static void addShader(
   const char* shaderText,
   GLenum      shaderType
 ) {
-  GLuint shaderObj = glCreateShader(shaderType);_glec;
+  GLuint shaderObj = glCreateShader(shaderType);_glec
   if (!shaderObj) {
     cout << "Error creating " << shaderTypeString(shaderType) << endl;
     exit(__LINE__);
   }
   GLint shaderTextLen = strlen(shaderText);
-  glShaderSource(shaderObj, 1, &shaderText, &shaderTextLen);_glec;
-  glCompileShader(shaderObj);_glec;
+  glShaderSource(shaderObj, 1, &shaderText, &shaderTextLen);_glec
+  glCompileShader(shaderObj);_glec
   GLint success;
-  glGetShaderiv(shaderObj, GL_COMPILE_STATUS, &success);_glec;
+  glGetShaderiv(shaderObj, GL_COMPILE_STATUS, &success);_glec
   if (!success) {
     GLchar infoLog[1024];
-    glGetShaderInfoLog(shaderObj, sizeof(infoLog), NULL, infoLog);_glec;
+    glGetShaderInfoLog(shaderObj, sizeof(infoLog), NULL, infoLog);_glec
     cout << "Error compiling " << shaderTypeString(shaderType) << endl
     << infoLog << endl;
     exit(__LINE__);
   }
-  glAttachShader(shaderProgram, shaderObj);_glec;
+  glAttachShader(shaderProgram, shaderObj);_glec
 }
 
 static void compileShaders(
@@ -67,7 +67,7 @@ static void compileShaders(
   const char *vsPath,
   const char *fsPath
 ) {
-  shaderProgram = glCreateProgram();_glec;
+  shaderProgram = glCreateProgram();_glec
   if (!shaderProgram) {
     cout << "Error creating shader program" << endl;
     exit(__LINE__);
@@ -79,36 +79,36 @@ static void compileShaders(
   addShader(shaderProgram, fs.c_str(), GL_FRAGMENT_SHADER);
   GLint success = 0;
   GLchar errorLog[1024] = {0};
-  glLinkProgram(shaderProgram);_glec;
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);_glec;
+  glLinkProgram(shaderProgram);_glec
+  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);_glec
   if (!success) {
-    glGetProgramInfoLog(shaderProgram, sizeof(errorLog), NULL, errorLog);_glec;
+    glGetProgramInfoLog(shaderProgram, sizeof(errorLog), NULL, errorLog);_glec
     cout << "Error linking shader program: " << endl << errorLog << endl;
     exit(__LINE__);
   }
-  glValidateProgram(shaderProgram);_glec;
-  glGetProgramiv(shaderProgram, GL_VALIDATE_STATUS, &success);_glec;
+  glValidateProgram(shaderProgram);_glec
+  glGetProgramiv(shaderProgram, GL_VALIDATE_STATUS, &success);_glec
   if (!success) {
-    glGetProgramInfoLog(shaderProgram, sizeof(errorLog), NULL, errorLog);_glec;
+    glGetProgramInfoLog(shaderProgram, sizeof(errorLog), NULL, errorLog);_glec
     cout << "Invalid shader program: " << endl << errorLog << endl;
     exit(__LINE__);
   }
-  glUseProgram(shaderProgram);_glec;
+  glUseProgram(shaderProgram);_glec
 }
 
 GLuint VBO;
 GLint attr_GL_pos;
 GLint attr_screen_pos;
 static void grid_renderCB() {
-  glClear(GL_COLOR_BUFFER_BIT);_glec;
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec;
-  glEnableVertexAttribArray(attr_GL_pos);_glec;
-  glEnableVertexAttribArray(attr_screen_pos);_glec;
-  glVertexAttribPointer(attr_GL_pos,     3, GL_FLOAT, GL_FALSE, 5*sizeof(float), NULL);_glec;
-  glVertexAttribPointer(attr_screen_pos, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (const GLvoid*)(3*sizeof(float)));_glec;
-  glDrawArrays(GL_TRIANGLES, 0, 3);_glec;
-  glDisableVertexAttribArray(attr_GL_pos);_glec;
-  glDisableVertexAttribArray(attr_screen_pos);_glec;
+  glClear(GL_COLOR_BUFFER_BIT);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
+  glEnableVertexAttribArray(attr_GL_pos);_glec
+  glEnableVertexAttribArray(attr_screen_pos);_glec
+  glVertexAttribPointer(attr_GL_pos,     3, GL_FLOAT, GL_FALSE, 5*sizeof(float), NULL);_glec
+  glVertexAttribPointer(attr_screen_pos, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (const GLvoid*)(3*sizeof(float)));_glec
+  glDrawArrays(GL_TRIANGLES, 0, 3);_glec
+  glDisableVertexAttribArray(attr_GL_pos);_glec
+  glDisableVertexAttribArray(attr_screen_pos);_glec
   glutSwapBuffers();
 }
 
@@ -138,20 +138,20 @@ int main(int argc, char** argv) {
   glClearColor(0,0,0,0);
   
   compileShaders(grid_shader, grid_vsPath, grid_fsPath);
-  GLint unif_screenWidth  = glGetUniformLocation(grid_shader, "screenWidth");_glec;
-  GLint unif_screenHeight = glGetUniformLocation(grid_shader, "screenHeight");_glec;
-  glUniform1i(unif_screenWidth, screenWidth);_glec;
-  glUniform1i(unif_screenHeight, screenHeight);_glec;
-  attr_GL_pos     = glGetAttribLocation(grid_shader, "GL_pos");_glec;
-  attr_screen_pos = glGetAttribLocation(grid_shader, "screen_pos");_glec;
+  GLint unif_screenWidth  = glGetUniformLocation(grid_shader, "screenWidth");_glec
+  GLint unif_screenHeight = glGetUniformLocation(grid_shader, "screenHeight");_glec
+  glUniform1i(unif_screenWidth, screenWidth);_glec
+  glUniform1i(unif_screenHeight, screenHeight);_glec
+  attr_GL_pos     = glGetAttribLocation(grid_shader, "GL_pos");_glec
+  attr_screen_pos = glGetAttribLocation(grid_shader, "screen_pos");_glec
   float vertexData[] = {
     -1,  3, 0,  0,           0-screenHeight,
      3, -1, 0,  screenWidth*2, screenHeight,
     -1, -1, 0,  0,             screenHeight
   };
-  glGenBuffers(1, &VBO);_glec;
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec;
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);_glec;
+  glGenBuffers(1, &VBO);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);_glec
   
   glutMainLoop();
   
