@@ -34,7 +34,7 @@ const char *shaderTypeString(GLuint st) {
     case GL_VERTEX_SHADER  : return "vertex shader";
     case GL_FRAGMENT_SHADER: return "fragment shader";
   }
-  return NULL;
+  return "unknown shader type";
 }
 
 static void addShader(
@@ -117,6 +117,7 @@ const char* grid_vsPath = "grid_vs.glsl";
 const char* grid_fsPath = "grid_fs.glsl";
 const int screenWidth = 1280;
 const int screenHeight = 800;
+const int gridUnit = 16;
 
 
 int main(int argc, char** argv) {
@@ -138,10 +139,8 @@ int main(int argc, char** argv) {
   glClearColor(0,0,0,0);
   
   compileShaders(grid_shader, grid_vsPath, grid_fsPath);
-  GLint unif_screenWidth  = glGetUniformLocation(grid_shader, "screenWidth");_glec
-  GLint unif_screenHeight = glGetUniformLocation(grid_shader, "screenHeight");_glec
-  glUniform1i(unif_screenWidth, screenWidth);_glec
-  glUniform1i(unif_screenHeight, screenHeight);_glec
+  GLint unif_gridUnit  = glGetUniformLocation(grid_shader, "gridUnit");_glec
+  glUniform1i(unif_gridUnit, gridUnit);_glec
   attr_GL_pos     = glGetAttribLocation(grid_shader, "GL_pos");_glec
   attr_screen_pos = glGetAttribLocation(grid_shader, "screen_pos");_glec
   float vertexData[] = {
