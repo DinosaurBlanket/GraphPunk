@@ -24,10 +24,10 @@ void main() {
   int ofGridUnitX = int(screen_pos_terp.x) % gridUnit;
   int ofGridUnitY = int(screen_pos_terp.y) % gridUnit;
   bool isLine =
-    ofGridUnitX ==  0 ||
-    ofGridUnitX == 15 ||
-    ofGridUnitY ==  0 ||
-    ofGridUnitY == 15
+    ofGridUnitX == 0          ||
+    ofGridUnitX == gridUnit-1 ||
+    ofGridUnitY == 0          ||
+    ofGridUnitY == gridUnit-1
   ;
   FragColor = isLine ? lineColor : backColor;
 }
