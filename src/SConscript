@@ -1,0 +1,3 @@
+env = Environment(CC = "g++", CCFLAGS = "-Wall -std=c++11")
+src = ["main.cpp", "render_grid.cpp", "GL_util.cpp"]
+env.Program("GraphPunk", src, LIBS = ["GL", "GLEW", "glut"])
