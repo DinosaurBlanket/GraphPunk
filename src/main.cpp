@@ -9,12 +9,9 @@ static void glutCB_display() {
   glutSwapBuffers();
 }
 
-const int screenW = 1280;
-const int screenH = 800;
-const int gridUnit = 16;
-const char* grid_vsPath = "src/grid_vs.glsl";
-const char* grid_fsPath = "src/grid_fs.glsl";
-
+int screenW  = 1280;
+int screenH  =  800;
+int gridUnit =   16;
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
@@ -34,7 +31,7 @@ int main(int argc, char** argv) {
   
   //glClearColor(0,0,0,0);
   
-  render_grid_init(grid_vsPath, grid_fsPath, screenW, screenH, gridUnit);
+  render_grid_init(gridUnit);
   
   glutMainLoop();
   

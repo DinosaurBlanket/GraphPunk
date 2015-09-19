@@ -1,6 +1,9 @@
 #include "common.hpp"
 #include "GL_util.hpp"
 
+#include <cstring>
+#include <string>
+using std::string;
 #include <sstream>
 #include <fstream>
 int readFile(const char *path, string &out) {
