@@ -1,4 +1,6 @@
-#include "common.hpp"
+#include <iostream>
+using std::cout;
+using std::endl;
 #include "GL_util.hpp"
 
 #include <cstring>

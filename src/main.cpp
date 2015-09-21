@@ -1,22 +1,26 @@
 
-#include "common.hpp"
+#include <iostream>
+using std::cout;
+using std::endl;
 #include "GL_util.hpp"
-#include "render_grid.hpp"
+#include "view_map.hpp"
+#include <glm/glm.hpp>
 
 static void glutCB_display() {
   //glClear(GL_COLOR_BUFFER_BIT);_glec
-  render_grid_draw();
+  view_map_draw();
   glutSwapBuffers();
 }
 
-int screenW  = 1280;
-int screenH  =  800;
-int gridUnit =   16;
+glm::vec2 screenSize = glm::vec2(1280, 800);//pixels
+glm::vec4 gridRect   = glm::vec4(-80, 50, 160, 100);//grid units
+//int gridUnit = 16;
+
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
-  glutInitWindowSize(screenW, screenH);
+  glutInitWindowSize(screenSize.x, screenSize.y);
   glutInitWindowPosition(160, 50);
   glutCreateWindow("GraphPunk");
   glutDisplayFunc(glutCB_display);
@@ -29,9 +33,9 @@ int main(int argc, char** argv) {
   
   cout << "OpenGL version: " << glGetString(GL_VERSION) << endl;
   
-  //glClearColor(0,0,0,0);
+  glClearColor(0.0,0.2,0.3,1.0);_glec
   
-  render_grid_init(gridUnit);
+  view_map_init(gridRect);
   
   glutMainLoop();
   
