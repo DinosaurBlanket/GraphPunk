@@ -16,13 +16,14 @@ int readFile(const char *path, string &out) {
   out = ss.str();
   return out.length();
 }
-
+#if GL_ERROR_CHECK
 void glec(int line, const char *file) {
   GLenum GLstatus;
   while ((GLstatus = glGetError()) != GL_NO_ERROR) {
     cout<<"OpenGL error: "<<GLstatus<<" on line "<<line<<" in "<<file<<endl;
   }
 }
+#endif
 
 const char *shaderTypeString(GLuint st) {
   switch(st) {

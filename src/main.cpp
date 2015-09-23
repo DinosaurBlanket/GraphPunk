@@ -2,9 +2,7 @@
 #include <iostream>
 using std::cout;
 using std::endl;
-#include "GL_util.hpp"
 #include "view_map.hpp"
-#include <glm/glm.hpp>
 
 static void glutCB_display() {
   //glClear(GL_COLOR_BUFFER_BIT);_glec
@@ -12,10 +10,9 @@ static void glutCB_display() {
   glutSwapBuffers();
 }
 
-glm::vec2 screenSize = glm::vec2(1280, 800);//pixels
-glm::vec4 gridRect   = glm::vec4(-80, 50, 160, 100);//grid units
-//int gridUnit = 16;
-
+vec2  screenSize = vec2(1280, 800);//pixels
+vec4  gridRect   = vec4(-80, 50, 160, 100);//grid units
+float gridUnit   = 16;//pixels
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
@@ -35,7 +32,7 @@ int main(int argc, char** argv) {
   
   glClearColor(0.0,0.2,0.3,1.0);_glec
   
-  view_map_init(gridRect);
+  view_map_init(gridRect, screenSize, gridUnit);
   
   glutMainLoop();
   

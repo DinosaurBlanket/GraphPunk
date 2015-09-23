@@ -1,3 +1,4 @@
+bin/*
+log/*
 GraphPunk
-bin/
 .sconsign.dblite
