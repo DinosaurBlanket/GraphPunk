@@ -31,6 +31,7 @@ void compileShaders(
 
 enum layers {
   layer_gridLines,
+  layer_windRose,
   layer_patches,
   layer_ports
 };
