@@ -8,11 +8,11 @@
 using namespace glm;
 #include "options.h"
 
-#if GL_ERROR_CHECK
-void glec(int line, const char *file);
+#if GLEC_ENABLED
+void glec(const int line, const char *file);
 #define _glec glec(__LINE__, __FILE__);
 #else
-#define _glec ;
+#define _glec
 #endif
 
 const char *shaderTypeString(GLuint st);
@@ -28,11 +28,4 @@ void compileShaders(
   const char *vsPath,
   const char *fsPath
 );
-
-enum layers {
-  layer_gridLines,
-  layer_windRose,
-  layer_patches,
-  layer_ports
-};
 
