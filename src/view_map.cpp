@@ -206,4 +206,8 @@ void view_map_draw() {
   glDisableVertexAttribArray(attr_color);_glec
 }
 
-
+void displayGCB() {
+  glClear(GL_COLOR_BUFFER_BIT);_glec
+  view_map_draw();
+  glutSwapBuffers();
+}

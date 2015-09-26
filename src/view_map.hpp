@@ -9,3 +9,4 @@ void view_map_addPatch();
 void view_map_remPatch();
 void view_map_repPatch();
 void view_map_draw();
+void displayGCB();
