@@ -3,6 +3,7 @@
 using std::cout;
 using std::endl;
 #include "view_map.hpp"
+#include "ctrl_scrollable.hpp"
 #include <vector>
 
 GLuint VBO;
@@ -30,6 +31,8 @@ std::vector<indx_t> indxAll;
 uint vrtxCount = 0;
 uint indxCount = 0;
 mat4 transform;
+
+scrollable mapScroll;
 
 #if LOGGING_ENABLED
 #include <iostream>
@@ -67,6 +70,11 @@ void logIndxData(
 
 
 void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit) {
+  mapScroll = scrollable(
+    1.2,
+    vec2(gridRect[2]*gridUnit, gridRect[3]*gridUnit),
+    screenSize
+  );
   {//originSquare
     const uint32_t color = 0xff114400;
     const uint size = 4;
@@ -181,10 +189,19 @@ void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit) {
   );_glec
 }
 
-void view_map_resize();
-void view_map_addPatch();
-void view_map_remPatch();
-void view_map_repPatch();
+
+void view_map_scroll(
+  float cursPress,
+  float pCursPress,
+  vec2  cursPos,
+  vec2  pCursPos
+) {
+  mapScroll.advance(cursPress, pCursPress, cursPos, pCursPos);
+  cout << "mapScroll.getPos(): "
+  << mapScroll.getPos().x << ", "
+  << mapScroll.getPos().y << endl;
+  //transform =
+}
 
 void view_map_draw() {
   glClear(GL_COLOR_BUFFER_BIT);_glec
@@ -204,10 +221,4 @@ void view_map_draw() {
   );_glec
   glDisableVertexAttribArray(attr_pos);_glec
   glDisableVertexAttribArray(attr_color);_glec
-}
-
-void displayGCB() {
-  glClear(GL_COLOR_BUFFER_BIT);_glec
-  view_map_draw();
-  glutSwapBuffers();
 }

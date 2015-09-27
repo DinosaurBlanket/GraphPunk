@@ -5,10 +5,20 @@ using std::endl;
 #include "view_map.hpp"
 #include "ctrl_point.hpp"
 
-
 vec2  screenSize = vec2(1280, 800);//pixels
 vec4  gridRect   = vec4(-80, 50, 160, 100);//grid units
 float gridUnit   = 16;//pixels
+
+//int prevGlutElapsedTime = 0;
+//int crntGlutElapsedTime = 0;
+void displayGCB() {
+  //prevGlutElapsedTime = crntGlutElapsedTime;
+  //crntGlutElapsedTime = glutGet(GLUT_ELAPSED_TIME);
+  //int deltaT = crntGlutElapsedTime - prevGlutElapsedTime;
+  glClear(GL_COLOR_BUFFER_BIT);_glec
+  view_map_draw();
+  glutSwapBuffers();
+}
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
@@ -17,8 +27,8 @@ int main(int argc, char** argv) {
   glutInitWindowPosition(160, 50);
   glutCreateWindow("GraphPunk");
   glutDisplayFunc(displayGCB);
-  glutMouseFunc(pointDeviceButtonGCB);
-  glutMotionFunc(pointDeviceDragGCB);
+  glutMouseFunc(pointDevButtonGCB);
+  glutMotionFunc(pointDevDragGCB);
   
   GLenum res = glewInit();
   if (res != GLEW_OK) {
