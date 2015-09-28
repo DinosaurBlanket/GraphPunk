@@ -196,12 +196,15 @@ void view_map_scroll(
   vec2  pCursPos
 ) {
   mapScroll.advance(cursPress, pCursPress, cursPos, pCursPos);
-  translateMatrix = translate(
+  scrolledTransform = translate(
     scaledTransform,
-    vec3(mapScroll.getPos(), 1)/(gridUnit*2)
+    vec3(
+      (mapScroll.getPos().x)/gridUnit,
+      -((mapScroll.getPos().y)/gridUnit),
+      1.0
+    )
   );
-  scrolledTransform =
-  const float *scrolledTransformSource = value_ptr(scrolledTransform);
+  const float *scrolledTransformData = value_ptr(scrolledTransform);
   cout << "mapScroll.getPos(): "
   << mapScroll.getPos().x << ", " << mapScroll.getPos().y << endl
   << "cursPress : " << cursPress << endl
@@ -214,7 +217,7 @@ void view_map_scroll(
     cout << "  ";
     for (uint j = 0; j < 4; j++) {
       cout << std::setw(9) << std::setfill(' ') << std::fixed << std::setprecision(5)
-      << scrolledTransformSource[i*4 + j] << "  ";
+      << scrolledTransformData[i*4 + j] << "  ";
     }
     cout << endl;
   }

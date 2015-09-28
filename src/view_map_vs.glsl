@@ -6,6 +6,6 @@ in  vec4 color;
 out vec4 color_terp;
 
 void main() {
-  gl_Position = vec4(pos, 1.0)*transform;
+  gl_Position = transform*vec4(pos, 1.0);
   color_terp = color;
 }
