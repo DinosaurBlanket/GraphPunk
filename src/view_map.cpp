@@ -2,9 +2,13 @@
 #include <iostream>
 using std::cout;
 using std::endl;
+#include <iomanip>
+#include <vector>
+#define GLM_FORCE_RADIANS
+#include <glm/gtc/type_ptr.hpp>
+#include "view_all.hpp"
 #include "view_map.hpp"
 #include "ctrl_scrollable.hpp"
-#include <vector>
 
 GLuint VBO;
 GLuint IBO;
@@ -30,8 +34,6 @@ std::vector<indx_t> indxAll;
 
 uint vrtxCount = 0;
 uint indxCount = 0;
-mat4 transform;
-
 scrollable mapScroll;
 
 #if LOGGING_ENABLED
@@ -69,7 +71,7 @@ void logIndxData(
 #endif
 
 
-void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit) {
+void view_map_init() {
   mapScroll = scrollable(
     1.2,
     vec2(gridRect[2]*gridUnit, gridRect[3]*gridUnit),
@@ -137,14 +139,12 @@ void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit) {
     logVrtxData(gridLines.vrtx, 4, "log/gridLinesVrtxData.txt");
     #endif
   }
-  transform = scale(
+  scaledTransform = scale(
     mat4(), vec3((gridUnit*2)/screenSize.x, (gridUnit*2)/screenSize.y, 1.0)
   );
+  scrolledTransform = scaledTransform;
   compileShaders(shaderProgram, vsPath, fsPath);
   unif_transform = glGetUniformLocation(shaderProgram, "transform");_glec
-  glUniformMatrix4fv(
-    unif_transform, 1, GL_FALSE, (const GLfloat*)&transform
-  );_glec
   attr_pos   = glGetAttribLocation(shaderProgram, "pos");_glec
   attr_color = glGetAttribLocation(shaderProgram, "color");_glec
   glGenBuffers(1, &VBO);_glec
@@ -189,7 +189,6 @@ void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit) {
   );_glec
 }
 
-
 void view_map_scroll(
   float cursPress,
   float pCursPress,
@@ -197,15 +196,37 @@ void view_map_scroll(
   vec2  pCursPos
 ) {
   mapScroll.advance(cursPress, pCursPress, cursPos, pCursPos);
+  translateMatrix = translate(
+    scaledTransform,
+    vec3(mapScroll.getPos(), 1)/(gridUnit*2)
+  );
+  scrolledTransform =
+  const float *scrolledTransformSource = value_ptr(scrolledTransform);
   cout << "mapScroll.getPos(): "
-  << mapScroll.getPos().x << ", "
-  << mapScroll.getPos().y << endl;
-  //transform =
+  << mapScroll.getPos().x << ", " << mapScroll.getPos().y << endl
+  << "cursPress : " << cursPress << endl
+  << "pCursPress: " << pCursPress << endl
+  << "cursPos   : " << cursPos.x    << ", " << cursPos.y    << endl
+  << "pCursPos  : " << pCursPos.x   << ", " << pCursPos.y   << endl;
+  
+  cout << "scrolledTransform: " << endl;
+  for (uint i = 0; i < 4; i++) {
+    cout << "  ";
+    for (uint j = 0; j < 4; j++) {
+      cout << std::setw(9) << std::setfill(' ') << std::fixed << std::setprecision(5)
+      << scrolledTransformSource[i*4 + j] << "  ";
+    }
+    cout << endl;
+  }
+  cout << endl;
 }
 
 void view_map_draw() {
   glClear(GL_COLOR_BUFFER_BIT);_glec
   glUseProgram(shaderProgram);_glec
+  glUniformMatrix4fv(
+    unif_transform, 1, GL_FALSE, (const GLfloat*)&scrolledTransform
+  );_glec
   glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);_glec
   glEnableVertexAttribArray(attr_pos);_glec

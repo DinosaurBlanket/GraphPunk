@@ -1,7 +1,51 @@
 #include <iostream>
 using std::cout;
 using std::endl;
-#include "GL_util.hpp"
+#include "view_all.hpp"
+#include "view_map.hpp"
+#include "ctrl_scrollable.hpp"
+#include "ctrl_point.hpp"
+
+//int prevGlutElapsedTime = 0;
+//int crntGlutElapsedTime = 0;
+void displayGCB() {
+  //prevGlutElapsedTime = crntGlutElapsedTime;
+  //crntGlutElapsedTime = glutGet(GLUT_ELAPSED_TIME);
+  //int deltaT = crntGlutElapsedTime - prevGlutElapsedTime;
+  glClear(GL_COLOR_BUFFER_BIT);_glec
+  view_map_draw();
+  glutSwapBuffers();
+}
+
+vec2  screenSize;
+vec4  gridRect;
+float gridUnit;
+mat4  scaledTransform;
+mat4  scrolledTransform;
+
+void viewInit(int argc, char** argv) {
+  screenSize = vec2(640, 480);//pixels
+  gridRect   = vec4(-40, 30, 80, 60);//grid units
+  gridUnit   = 16;//pixels
+  glutInit(&argc, argv);
+  glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
+  glutInitWindowSize(screenSize.x, screenSize.y);
+  glutCreateWindow("GraphPunk");
+  glutDisplayFunc(displayGCB);
+  glutMouseFunc(pointDevButtonGCB);
+  glutMotionFunc(pointDevDragGCB);
+  
+  GLenum res = glewInit();
+  if (res != GLEW_OK) {
+    cout << "Error: " << endl << glewGetErrorString(res) << endl;
+    return;
+  }
+  
+  cout << "OpenGL version: " << glGetString(GL_VERSION) << endl;
+  
+  glClearColor(0.0,0.2,0.3,1.0);_glec
+  view_map_init();
+}
 
 #include <cstring>
 #include <string>

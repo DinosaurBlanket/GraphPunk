@@ -17,6 +17,8 @@ void glec(const int line, const char *file);
 
 const char *shaderTypeString(GLuint st);
 
+void viewInit(int argc, char** argv);
+
 void addShader(
   GLuint      shaderProgram,
   const char* shaderText,
@@ -28,4 +30,10 @@ void compileShaders(
   const char *vsPath,
   const char *fsPath
 );
+
+extern vec2  screenSize;
+extern vec4  gridRect;
+extern float gridUnit;
+extern mat4  scaledTransform;
+extern mat4  scrolledTransform;
 

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "GL_util.hpp"
+#include <glm/vec2.hpp>
+using glm::vec2;
 
-void view_map_init(vec4 gridRect, vec2 screenSize, float gridUnit);
+void view_map_init();
 void view_map_scroll(
   float cursPress,
   float pCursPress,
