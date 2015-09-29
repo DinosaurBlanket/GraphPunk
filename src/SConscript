@@ -1,9 +1,0 @@
-env = Environment(CC = "g++", CCFLAGS = "-Wall -std=c++11")
-src = [
-    "main.cpp",
-    "view_all.cpp",
-    "view_map.cpp",
-    "ctrl_scrollable.cpp",
-    "ctrl_point.cpp",
-]
-env.Program("GraphPunk", src, LIBS = ["GL", "GLEW", "glut"])
