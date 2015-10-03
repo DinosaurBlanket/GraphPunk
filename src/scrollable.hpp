@@ -16,7 +16,7 @@ class scrollable {
   vec2  winSize;
   vec2  posBR();
   vec2  pPosBR();
-  int   lastAdvanced;//milliseconds
+  uint  lastAdvanced;//milliseconds
 public:
   scrollable();
   scrollable(const float accelIn, const vec2 sizeIn, const vec2 winSizeIn);

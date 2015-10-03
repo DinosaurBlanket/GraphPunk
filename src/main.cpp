@@ -4,10 +4,9 @@
 #include <iostream>
 using std::cout;
 using std::endl;
-#define   GLEW_STATIC
+#define  GLEW_STATIC
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
-#include <SDL_opengl.h>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -16,19 +15,33 @@ using std::endl;
 using namespace glm;
 
 #include "options.h"
+#include "scrollable.hpp"
 
 
-#if GLEC_ENABLED
-void glec(const int line, const char *file) {
-  GLenum GLstatus;
-  while ((GLstatus = glGetError()) != GL_NO_ERROR) {
-    cout<<"OpenGL error: "<<GLstatus<<" on line "<<line<<" in "<<file<<endl;
+#if CHECK_ERRORS_SDL_GL
+  void glec(const int line, const char *file) {
+    GLenum GLstatus;
+    while ((GLstatus = glGetError()) != GL_NO_ERROR) {
+      cout<<"OpenGL error: "<<GLstatus<<" on line "<<line<<" in "<<file<<endl;
+    }
   }
-}
-#define _glec glec(__LINE__, __FILE__);
+  #define _glec glec(__LINE__, __FILE__);
+  void sdlec(int line, const char *file) {
+    const char *error = SDL_GetError();
+    if (!error || !error[0]) return;
+    cout << "SDL error at line " << line << " in " << file << endl
+    << error << endl;
+    SDL_ClearError();
+    exit(-10);
+  }
+  #define _sdlec sdlec(__LINE__, __FILE__);
 #else
-#define _glec
+  #define _glec
+  #define _sdlec
 #endif
+
+
+
 
 
 #include <string>
@@ -118,8 +131,8 @@ GLuint shaderProgram;
 GLint attr_pos;
 GLint attr_color;
 GLint unif_transform;
-const char *vsPath = "view_map_vs.glsl";
-const char *fsPath = "view_map_fs.glsl";
+const char *vsPath = "src/view_map_vs.glsl";
+const char *fsPath = "src/view_map_fs.glsl";
 struct vertex {
   vec2     pos;
   uint32_t color;
@@ -202,9 +215,9 @@ int main(int argc, char *argv[]) {
 		videoSize.y,               //int         h,
 		SDL_WINDOW_OPENGL          //Uint32      flags
 	);
-  if (!window)    cout << "SDL error: " << SDL_GetError() << endl;
+  if (!window)    _sdlec
 	GLcontext = SDL_GL_CreateContext(window);
-  if (!GLcontext) cout << "SDL error: " << SDL_GetError() << endl;
+  if (!GLcontext) _sdlec
   
   glewExperimental = GL_TRUE;
   {
@@ -341,53 +354,80 @@ int main(int argc, char *argv[]) {
 	
 	
 	
-	bool  running  = true;
-	//Uint32 timeout = SDL_GetTicks() + runTime;
-	while (/*!SDL_TICKS_PASSED(SDL_GetTicks(), timeout) && */running) {
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			if (
-				event.type == SDL_QUIT ||
-				(event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_ESCAPE)
-			) {
-				running = false;
-			}
-		}
-		
-		
-		//view_map_draw
-	  glClear(GL_COLOR_BUFFER_BIT);_glec
-	  glUseProgram(shaderProgram);_glec
-	  glUniformMatrix4fv(
-	    unif_transform, 1, GL_FALSE, (const GLfloat*)&scaledTransform
-	  );_glec
-	  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
-	  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);_glec
-	  glEnableVertexAttribArray(attr_pos);_glec
-	  glEnableVertexAttribArray(attr_color);_glec
-	  glVertexAttribPointer(
-	    attr_pos,   2, GL_FLOAT,         false, 12, (const GLvoid*)0
-	  );_glec
-	  glVertexAttribPointer(
-	    attr_color, 4, GL_UNSIGNED_BYTE, true,  12, (const GLvoid*)8
-	  );_glec
-	  glDrawElements(
-	    GL_TRIANGLES, indxCount, GL_UNSIGNED_SHORT, (const GLvoid*)0
-	  );_glec
-	  glDisableVertexAttribArray(attr_pos);_glec
-	  glDisableVertexAttribArray(attr_color);_glec
-		
-		
-		
-		
-		
-		SDL_GL_SwapWindow(window);
+  float cursPress  = 0;
+  float pCursPress = 0;
+  vec2  cursPos;
+  vec2  pCursPos;
+  const float scrollAccel = 1.2;
+  scrollable scroll = scrollable(
+    scrollAccel, vec2(gridRect[2], gridRect[3]), videoSize
+  );
+  int  curFrame = 0;
+  bool running = true;
+	while (running) {
+    pCursPress = cursPress;
+    pCursPos   = cursPos;
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+        case SDL_QUIT: running = false; break;
+        case SDL_WINDOWEVENT:
+          //if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+          //  SDL_UpdateWindowSurface(window);_sdlec
+          //}
+          break;
+        case SDL_MOUSEMOTION:
+          cursPos = vec2(event.motion.x, event.motion.y);
+          break;
+        case SDL_MOUSEBUTTONDOWN:
+          switch (event.button.button) {
+            case SDL_BUTTON_LEFT: cursPress = 1; break;
+          }
+          break;
+        case SDL_MOUSEBUTTONUP:
+          switch (event.button.button) {
+            case SDL_BUTTON_LEFT: cursPress = 0; break;
+          }
+          break;
+      }
+    }
+    scroll.advance(cursPress, pCursPress, cursPos, pCursPos);
+    if (scroll.hasMoved() || !curFrame) {
+      cout << "scroll.getPos(): "
+      << scroll.getPos().x << ", " << scroll.getPos().y << endl;
+      
+  		//view_map_draw
+  	  glClear(GL_COLOR_BUFFER_BIT);_glec
+  	  glUseProgram(shaderProgram);_glec
+  	  glUniformMatrix4fv(
+  	    unif_transform, 1, GL_FALSE, (const GLfloat*)&scaledTransform
+  	  );_glec
+  	  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
+  	  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);_glec
+  	  glEnableVertexAttribArray(attr_pos);_glec
+  	  glEnableVertexAttribArray(attr_color);_glec
+  	  glVertexAttribPointer(
+  	    attr_pos,   2, GL_FLOAT,         false, 12, (const GLvoid*)0
+  	  );_glec
+  	  glVertexAttribPointer(
+  	    attr_color, 4, GL_UNSIGNED_BYTE, true,  12, (const GLvoid*)8
+  	  );_glec
+  	  glDrawElements(
+  	    GL_TRIANGLES, indxCount, GL_UNSIGNED_SHORT, (const GLvoid*)0
+  	  );_glec
+  	  glDisableVertexAttribArray(attr_pos);_glec
+  	  glDisableVertexAttribArray(attr_color);_glec
+  		
+  		
+  		SDL_GL_SwapWindow(window);_sdlec
+    }
 		SDL_Delay(10);
+    curFrame++;
 	}
 	
 	
-	SDL_GL_DeleteContext(GLcontext);
-	SDL_Quit();
+	SDL_GL_DeleteContext(GLcontext);_sdlec
+	SDL_Quit();_sdlec
 	return 0;
 }
 

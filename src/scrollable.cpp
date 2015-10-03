@@ -1,35 +1,12 @@
 
-#include <GL/freeglut.h>
-#include <glm/glm.hpp>
-using glm::vec2;
+#include "scrollable.hpp"
+#include <SDL2/SDL.h>
 
 float bigger(const float a, const float b) {return a > b ? a : b;}
 float ternaryReduc(const float in) {return in ? (in > 0 ? 1 : -1) : 0;}
 bool passedZero(const float prev, const float cur) {
   return (prev > 0 && cur <= 0) || (prev < 0 && cur >= 0);
 }
-
-class scrollable {
-  float accel;
-  float bumper;
-  vec2  size;
-  vec2  boundary;
-  vec2  vel;
-  vec2  pos;
-  vec2  pPos;
-  vec2  overBounds;
-  vec2  pOverBounds;
-  vec2  winSize;
-  vec2  posBR();
-  vec2  pPosBR();
-  int   lastAdvanced;//milliseconds
-public:
-  scrollable();
-  scrollable(const float accelIn, const vec2 sizeIn, const vec2 winSizeIn);
-  void advance(float cursPress, float pCursPress, vec2 cursPos,vec2 pCursPos);
-  vec2 getPos();
-  bool hasMoved();
-};
 
 vec2 scrollable::getPos()   {return pos;}
 vec2 scrollable::posBR()    {return pos  + boundary;}
@@ -40,8 +17,7 @@ scrollable::scrollable() {}
 
 scrollable::scrollable(
   const float accelIn, const vec2 sizeIn, const vec2 winSizeIn
-) : accel(accelIn), size(sizeIn), winSize(winSizeIn)
-{
+) : accel(accelIn), size(sizeIn), winSize(winSizeIn) {
   for (int i = 0; i < 2; i++) {boundary[i] = bigger(size[i], winSize[i]);}
   bumper = winSize.y/8;
 }
@@ -52,7 +28,7 @@ void scrollable::advance(
   vec2  cursPos,
   vec2  pCursPos
 ) {
-  const int elapsedTime = glutGet(GLUT_ELAPSED_TIME);//milliseconds
+  const int elapsedTime = SDL_GetTicks();//milliseconds
   //const int deltaT = elapsedTime - lastAdvanced;
   for (int i = 0; i < 2; i++) {
     pOverBounds[i] = overBounds[i];
