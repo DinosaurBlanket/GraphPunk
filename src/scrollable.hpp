@@ -19,7 +19,12 @@ class scrollable {
   uint  lastAdvanced;//milliseconds
 public:
   scrollable();
-  scrollable(const float accelIn, const vec2 sizeIn, const vec2 winSizeIn);
+  scrollable(
+    const float accelIn,
+    const vec2  sizeIn,
+    const vec2  initPos,
+    const vec2  winSizeIn
+  );
   void advance(float cursPress, float pCursPress, vec2 cursPos,vec2 pCursPos);
   vec2 getPos();
   bool hasMoved();

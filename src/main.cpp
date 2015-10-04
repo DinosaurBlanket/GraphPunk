@@ -196,14 +196,18 @@ void logIndxData(
 
 
 int main(int argc, char *argv[]) {
-	vec2  videoSize = vec2(640, 480);//pixels
-  vec4  gridRect  = vec4(-40, 30, 80, 60);//grid units
+	vec2  videoSize = vec2(1280, 800);//pixels
   float gridUnit  = 16;//pixels
+  //-40, 30
+  vec4  gridRect  = vec4(
+    -videoSize.x/(gridUnit), videoSize.y/(gridUnit),
+    videoSize/vec2(gridUnit/2)
+  );//grid units
   mat4  scaledTransform;
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO);_sdlec
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -214,10 +218,9 @@ int main(int argc, char *argv[]) {
 		videoSize.x,               //int         w,
 		videoSize.y,               //int         h,
 		SDL_WINDOW_OPENGL          //Uint32      flags
-	);
-  if (!window)    _sdlec
-	GLcontext = SDL_GL_CreateContext(window);
-  if (!GLcontext) _sdlec
+	);_sdlec
+	GLcontext = SDL_GL_CreateContext(window);_sdlec
+  SDL_GL_SetSwapInterval(1);_sdlec
   
   glewExperimental = GL_TRUE;
   {
@@ -360,7 +363,10 @@ int main(int argc, char *argv[]) {
   vec2  pCursPos;
   const float scrollAccel = 1.2;
   scrollable scroll = scrollable(
-    scrollAccel, vec2(gridRect[2], gridRect[3]), videoSize
+    scrollAccel,
+    vec2(gridRect[2]*gridUnit, gridRect[3]*gridUnit),
+    -videoSize/vec2(2),
+    videoSize
   );
   int  curFrame = 0;
   bool running = true;
@@ -393,14 +399,19 @@ int main(int argc, char *argv[]) {
     }
     scroll.advance(cursPress, pCursPress, cursPos, pCursPos);
     if (scroll.hasMoved() || !curFrame) {
-      cout << "scroll.getPos(): "
-      << scroll.getPos().x << ", " << scroll.getPos().y << endl;
-      
+      mat4 scrolledTransform = translate(
+        scaledTransform,
+        vec3(
+          (scroll.getPos().x + videoSize.x/2)/gridUnit,
+          -((scroll.getPos().y + videoSize.y/2)/gridUnit),
+          1.0
+        )
+      );
   		//view_map_draw
   	  glClear(GL_COLOR_BUFFER_BIT);_glec
   	  glUseProgram(shaderProgram);_glec
   	  glUniformMatrix4fv(
-  	    unif_transform, 1, GL_FALSE, (const GLfloat*)&scaledTransform
+  	    unif_transform, 1, GL_FALSE, (const GLfloat*)&scrolledTransform
   	  );_glec
   	  glBindBuffer(GL_ARRAY_BUFFER, VBO);_glec
   	  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);_glec
@@ -421,7 +432,7 @@ int main(int argc, char *argv[]) {
   		
   		SDL_GL_SwapWindow(window);_sdlec
     }
-		SDL_Delay(10);
+		SDL_Delay(16);
     curFrame++;
 	}
 	

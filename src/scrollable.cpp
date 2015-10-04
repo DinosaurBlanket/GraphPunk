@@ -16,8 +16,11 @@ bool scrollable::hasMoved() {return pos != pPos;}
 scrollable::scrollable() {}
 
 scrollable::scrollable(
-  const float accelIn, const vec2 sizeIn, const vec2 winSizeIn
-) : accel(accelIn), size(sizeIn), winSize(winSizeIn) {
+  const float accelIn,
+  const vec2  sizeIn,
+  const vec2  initPos,
+  const vec2  winSizeIn
+) : accel(accelIn), size(sizeIn), pos(initPos), winSize(winSizeIn) {
   for (int i = 0; i < 2; i++) {boundary[i] = bigger(size[i], winSize[i]);}
   bumper = winSize.y/8;
 }
