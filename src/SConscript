@@ -1,3 +1,10 @@
 env = Environment(CC = "g++", CCFLAGS = "-Wall -std=c++11")
-src = ["main.cpp", "scrollable.cpp"]
+src = [
+    "main.cpp",
+    "scrollable.cpp",
+    "errorsAndLogging.cpp",
+    "glShaderLoader.cpp",
+    "readFile.cpp",
+    "viewMap.cpp"
+]
 env.Program("GraphPunk", src, LIBS = ["GL", "GLEW", "SDL2"])

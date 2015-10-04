@@ -14,18 +14,22 @@ class scrollable {
   vec2  overBounds;
   vec2  pOverBounds;
   vec2  winSize;
+  uint  lastAdvanced;//milliseconds
   vec2  posBR();
   vec2  pPosBR();
-  uint  lastAdvanced;//milliseconds
+  void  resetBoundary();
 public:
   scrollable();
-  scrollable(
+  void init(
     const float accelIn,
     const vec2  sizeIn,
     const vec2  initPos,
     const vec2  winSizeIn
   );
   void advance(float cursPress, float pCursPress, vec2 cursPos,vec2 pCursPos);
+  vec2 getSize();
+  void resize(vec2 newSize);
+  vec2 getWinSize();
   vec2 getPos();
   bool hasMoved();
 };

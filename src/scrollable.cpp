@@ -8,21 +8,37 @@ bool passedZero(const float prev, const float cur) {
   return (prev > 0 && cur <= 0) || (prev < 0 && cur >= 0);
 }
 
-vec2 scrollable::getPos()   {return pos;}
-vec2 scrollable::posBR()    {return pos  + boundary;}
-vec2 scrollable::pPosBR()   {return pPos + boundary;}
-bool scrollable::hasMoved() {return pos != pPos;}
+vec2 scrollable::getWinSize() {return winSize;}
+vec2 scrollable::getPos()     {return pos;}
+vec2 scrollable::getSize()    {return size;}
+vec2 scrollable::posBR()      {return pos  + boundary;}
+vec2 scrollable::pPosBR()     {return pPos + boundary;}
+bool scrollable::hasMoved()   {return pos != pPos;}
 
 scrollable::scrollable() {}
 
-scrollable::scrollable(
+
+void scrollable::init(
   const float accelIn,
   const vec2  sizeIn,
   const vec2  initPos,
   const vec2  winSizeIn
-) : accel(accelIn), size(sizeIn), pos(initPos), winSize(winSizeIn) {
-  for (int i = 0; i < 2; i++) {boundary[i] = bigger(size[i], winSize[i]);}
+) {
+  accel = accelIn;
+  size = sizeIn;
+  pos = initPos;
+  winSize = winSizeIn;
   bumper = winSize.y/8;
+  resetBoundary();
+}
+
+void scrollable::resetBoundary() {
+  for (int i = 0; i < 2; i++) {boundary[i] = bigger(size[i], winSize[i]);}
+}
+
+void scrollable::resize(vec2 newSize) {
+  size = newSize;
+  resetBoundary();
 }
 
 void scrollable::advance(
