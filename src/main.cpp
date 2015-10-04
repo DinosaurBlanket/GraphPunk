@@ -242,9 +242,9 @@ int main(int argc, char *argv[]) {
   glClearColor(0.0,0.2,0.3,1.0);_glec
   //view_map_init
   {//originSquare
-    const uint32_t color = 0xff114400;
+    const uint32_t color = 0xff22aa00;
     const uint size = 4;
-    float corners[size*2] = {-1, 1,   1, 1,  -1,-1,   1,-1};
+    float corners[size*2] = {0,1, 1,0, -1,0, 0,-1};
     originSquare.vrtx.resize(size);
     for (uint i = 0; i < size; i++) {
       originSquare.vrtx[i].pos.x = corners[i*2];
@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
   }
   {//gridLines
     const float    halfGridLine  = 1.0/gridUnit;//grid units
-    const uint32_t gridLineColor = 0xff886622;//ABGR
+    const uint32_t gridLineColor = 0xdd665522;//ABGR
     const int hrzlGridLineVrtxCount = (gridRect[2] + 1) * 4;
     const int vrtlGridLineVrtxCount = (gridRect[3] + 1) * 4;
     const int gridLineVrtxCount = hrzlGridLineVrtxCount + vrtlGridLineVrtxCount;
