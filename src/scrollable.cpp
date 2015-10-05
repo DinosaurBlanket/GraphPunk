@@ -15,9 +15,6 @@ vec2 scrollable::posBR()      {return pos  + boundary;}
 vec2 scrollable::pPosBR()     {return pPos + boundary;}
 bool scrollable::hasMoved()   {return pos != pPos;}
 
-scrollable::scrollable() {}
-
-
 void scrollable::init(
   const float accelIn,
   const vec2  sizeIn,

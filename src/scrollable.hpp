@@ -19,7 +19,6 @@ class scrollable {
   vec2  pPosBR();
   void  resetBoundary();
 public:
-  scrollable();
   void init(
     const float accelIn,
     const vec2  sizeIn,
