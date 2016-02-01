@@ -1,11 +1,11 @@
 
-#define _POSIX_C_SOURCE 1
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #define  GLEW_STATIC
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
+typedef unsigned int uint;
 
 #define CHECK_SDL_GL_ERRORS true
 
@@ -32,38 +32,103 @@
 
 
 #include <sys/stat.h>
-// caller must free the pointer returned by this function
-char *stringFromFile(const char *restrict path) {
-  FILE *fp = fopen(path, "r");
-  if(!fp) {
-    printf("error: could not open file: %s\n", path);
-    return NULL;
-  }
-  uint32_t size;
-  {
-    struct stat st;
-    int fd = fileno(fp);
-    fstat(fd, &st);
-    size = st.st_size;
-  }
-  char *out = malloc(size);
-  int c;
-  for (int32_t i = 0;; i++) {
-    c = fgetc(fp);
-    if (c == EOF || i == size-1) {
-      out[i] = '\0';
-      break;
-    }
-    out[i] = c;
-  }
-  fclose(fp);
-  return out;
+int getFileSize(const char *restrict path) {
+  struct stat st;
+  stat(path, &st);
+  return st.st_size;
 }
 
-void shaderSourceFromFile(const char *restrict path, GLuint shader) {
-  char *source = stringFromFile(path);
-  glShaderSource(shader, 1, (const GLchar * const*)&source, NULL);_glec
-  free(source);
+void print_CouldNotOpenFile(const char *path) {
+  printf("error: could not open file \"%s\"\n", path);
+}
+int stringFromFile(const char *restrict path, char *dest, uint32_t maxWrite) {
+  if (!dest || !path || maxWrite < 1) return 0;
+  FILE *fp = fopen(path, "r");
+  if (!fp) {
+    print_CouldNotOpenFile(path);
+    return 0;
+  }
+  int c, i = 0;
+  for (; i < maxWrite; i++) {
+    c = fgetc(fp);
+    if (c == EOF) {
+      dest[i] = '\0';
+      break;
+    }
+    dest[i] = c;
+  }
+  fclose(fp);
+  return i;
+}
+
+
+GLuint createShaderProgram(
+  const char *vertPath, 
+  const char *fragPath, 
+  const char *progName
+) {
+  int vertSourceSize, fragSourceSize, textBufSize = 1024;
+  
+  vertSourceSize = getFileSize(vertPath);
+  if (!vertSourceSize) {
+    print_CouldNotOpenFile(vertPath);
+    return 0;
+  }
+  if (vertSourceSize > textBufSize) textBufSize = vertSourceSize + 1;
+  
+  fragSourceSize = getFileSize(fragPath);
+  if (!fragSourceSize) {
+    print_CouldNotOpenFile(fragPath);
+    return 0;
+  }
+  if (fragSourceSize > textBufSize) textBufSize = fragSourceSize + 1;
+  
+  char *textBuf = malloc(textBufSize);
+  GLint success;
+  const char *compileErrorString = "error compiling shader \"%s\":\n%s\n";
+  
+  GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);_glec
+  stringFromFile(vertPath, textBuf, textBufSize);
+  glShaderSource(vertShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
+  glCompileShader(vertShader);_glec
+  glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);_glec
+  if (!success) {
+    glGetShaderInfoLog(vertShader, textBufSize, NULL, textBuf);_glec
+    printf(compileErrorString, vertPath, textBuf);
+    return 0;
+  }
+  
+  GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);_glec
+  stringFromFile(fragPath, textBuf, textBufSize);
+  glShaderSource(fragShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
+  glCompileShader(fragShader);_glec
+  glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);_glec
+  if (!success) {
+    glGetShaderInfoLog(fragShader, textBufSize, NULL, textBuf);_glec
+    printf(compileErrorString, fragPath, textBuf);
+    return 0;
+  }
+  
+  GLuint shaderProgram = glCreateProgram();_glec
+  glAttachShader(shaderProgram, vertShader);_glec
+  glAttachShader(shaderProgram, fragShader);_glec
+  glLinkProgram(shaderProgram);_glec
+  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);_glec
+  if (!success) {
+    glGetShaderInfoLog(shaderProgram, textBufSize, NULL, textBuf);_glec
+    printf("error linking shader program \"%s\":\n%s\n", progName, textBuf);
+    return 0;
+  }
+  glValidateProgram(shaderProgram);_glec
+  glGetProgramiv(shaderProgram, GL_VALIDATE_STATUS, &success);_glec
+  if (!success) {
+    glGetShaderInfoLog(shaderProgram, textBufSize, NULL, textBuf);_glec
+    printf("error: invalid shader program \"%s\":\n%s\n", progName, textBuf);
+    return 0;
+  }
+  
+  free(textBuf);
+  return shaderProgram;
 }
 
 
@@ -98,7 +163,7 @@ int main(int argc, char *argv[]) {
     // There's an OpenGL error 1280 here for some reason, just flush it...
     while (glGetError() != GL_NO_ERROR) {};
   }
-  printf("OpenGL version: %s\n", glGetString(GL_VERSION));_glec
+  //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
   
   GLuint vao;
@@ -123,18 +188,14 @@ int main(int argc, char *argv[]) {
   );_glec
   
   
-  GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);_glec
-  GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);_glec
-  shaderSourceFromFile("src/vert.glsl", vertShader);
-  shaderSourceFromFile("src/frag.glsl", fragShader);
-  glCompileShader(vertShader);_glec
-  glCompileShader(fragShader);_glec
-  
-  GLuint shaderProgram = glCreateProgram();_glec
-  glAttachShader(shaderProgram, vertShader);_glec
-  glAttachShader(shaderProgram, fragShader);_glec
-  glLinkProgram(shaderProgram);_glec
+  GLuint shaderProgram = createShaderProgram(
+    "src/vert.glsl", 
+    "src/frag.glsl", 
+    "shaderProgram"
+  );
+  if (!shaderProgram) return __LINE__;
   glUseProgram(shaderProgram);_glec
+  
   
   GLint attrib_pos = glGetAttribLocation(shaderProgram, "position");_glec
   glVertexAttribPointer(attrib_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);_glec
