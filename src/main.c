@@ -131,6 +131,15 @@ GLuint createShaderProgram(
   return shaderProgram;
 }
 
+typedef struct {
+  float   x;
+  float   y;
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t o;
+} uiVert;
+
 
 int main(int argc, char *argv[]) {
 	uint32_t videoSizeX = 1280;//pixels
@@ -165,6 +174,27 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
+  uiVert vertices[] = {
+    // plane
+    {.x = -1.50f, .y =  1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 0
+    {.x =  1.50f, .y =  1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 1
+    {.x =  1.50f, .y = -1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 2
+    {.x = -1.50f, .y = -1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 3
+    // center marker
+    {.x =  0.00f, .y =  0.04f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 4
+    {.x =  0.04f, .y =  0.00f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 5
+    {.x =  0.00f, .y = -0.04f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 6
+    {.x = -0.04f, .y =  0.00f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}  // 7
+  };
+  //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
+  uint16_t indices[] = {
+    // plane
+    0,1,3, 1,2,3,
+    // center marker
+    4,5,7, 5,6,7
+  };
+  uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
+  
   
   GLuint vao;
   glGenVertexArrays(1, &vao);_glec
@@ -172,18 +202,22 @@ int main(int argc, char *argv[]) {
   
   glClearColor(0.0,0.2,0.3,1.0);_glec
   
-  float vertices[] = {
-    +0.0f, +0.5f,
-    +0.5f, -0.5f,
-    -0.5f, -0.5f
-  };
   GLuint vbo;
+  GLuint ebo;
   glGenBuffers(1, &vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
+  glGenBuffers(1, &ebo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER,         vbo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
   glBufferData(
     GL_ARRAY_BUFFER,
     sizeof(vertices),
     vertices,
+    GL_STATIC_DRAW
+  );_glec
+  glBufferData(
+    GL_ELEMENT_ARRAY_BUFFER, 
+    sizeof(indices), 
+    indices, 
     GL_STATIC_DRAW
   );_glec
   
@@ -197,9 +231,19 @@ int main(int argc, char *argv[]) {
   glUseProgram(shaderProgram);_glec
   
   
-  GLint attrib_pos = glGetAttribLocation(shaderProgram, "position");_glec
-  glVertexAttribPointer(attrib_pos, 2, GL_FLOAT, GL_FALSE, 0, 0);_glec
-  glEnableVertexAttribArray(attrib_pos);_glec
+  GLint attr_pos   = glGetAttribLocation(shaderProgram, "pos"  );_glec
+  GLint attr_color = glGetAttribLocation(shaderProgram, "color");_glec
+  glEnableVertexAttribArray(attr_pos  );_glec
+  glEnableVertexAttribArray(attr_color);_glec
+  glVertexAttribPointer(
+    attr_pos,   2, GL_FLOAT,         GL_FALSE, 12, (const GLvoid*)0
+  );_glec
+  glVertexAttribPointer(
+    attr_color, 4, GL_UNSIGNED_BYTE, GL_TRUE,  12, (const GLvoid*)8
+  );_glec
+  
+  
+  //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   
   
   int curFrame = 0;
@@ -225,7 +269,7 @@ int main(int argc, char *argv[]) {
     }
   	
     glClear(GL_COLOR_BUFFER_BIT);_glec
-		glDrawArrays(GL_TRIANGLES, 0, 3);_glec
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
 		
 		
 		SDL_GL_SwapWindow(window);_sdlec

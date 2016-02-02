@@ -1,5 +1,9 @@
 #version 330
-in vec2 position;
+//uniform vec2 scroll;
+in      vec3 pos;
+in      vec4 color;
+out     vec4 colorToFrag;
 void main() {
-  gl_Position = vec4(position, 0.0, 1.0);
+  colorToFrag = color;
+  gl_Position = vec4(pos, 1.0);
 }
