@@ -131,19 +131,26 @@ GLuint createShaderProgram(
   return shaderProgram;
 }
 
-typedef struct {
-  float   x;
-  float   y;
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  uint8_t o;
-} uiVert;
+typedef struct {float x; float y;}                   vec2;
+typedef struct {float x; float y; float z;}          vec3;
+typedef struct {float x; float y; float z; float w;} vec4;
+
+//typedef struct {
+//  float c0r0; float c1r0; float c2r0; float c3r0;
+//  float c0r1; float c1r1; float c2r1; float c3r1;
+//  float c0r2; float c1r2; float c2r2; float c3r2;
+//  float c0r3; float c1r3; float c2r3; float c3r3;
+//} mat4;
+
+typedef struct {uint8_t r; uint8_t g; uint8_t b; uint8_t a;} color;
+
+typedef struct {vec2 p; color c;} uiVert;
 
 
 int main(int argc, char *argv[]) {
 	uint32_t videoSizeX = 1280;//pixels
 	uint32_t videoSizeY =  800;
+	uint32_t gridUnit   =   16;
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -174,17 +181,19 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
+  
+  
   uiVert vertices[] = {
     // plane
-    {.x = -1.50f, .y =  1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 0
-    {.x =  1.50f, .y =  1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 1
-    {.x =  1.50f, .y = -1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 2
-    {.x = -1.50f, .y = -1.50f, .r = 0, .g = 0xFF, .b = 0, .o = 0xFF}, // 3
+    {.p = {-120.0f,  120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 0
+    {.p = { 120.0f,  120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 1
+    {.p = { 120.0f, -120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 2
+    {.p = {-120.0f, -120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 3
     // center marker
-    {.x =  0.00f, .y =  0.04f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 4
-    {.x =  0.04f, .y =  0.00f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 5
-    {.x =  0.00f, .y = -0.04f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}, // 6
-    {.x = -0.04f, .y =  0.00f, .r = 0, .g = 0, .b = 0xFF, .o = 0xFF}  // 7
+    {.p = { 0.0f,  1.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 4
+    {.p = { 1.0f,  0.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 5
+    {.p = { 0.0f, -1.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 6
+    {.p = {-1.0f,  0.0f},     .c = {0, 0, 0xFF, 0xFF}}  // 7
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
@@ -194,6 +203,11 @@ int main(int argc, char *argv[]) {
     4,5,7, 5,6,7
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
+  
+  vec2 unitScale = {
+    (float)(gridUnit*2)/(float)videoSizeX,
+    (float)(gridUnit*2)/(float)videoSizeY
+  };
   
   
   GLuint vao;
@@ -243,6 +257,9 @@ int main(int argc, char *argv[]) {
   );_glec
   
   
+  GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");
+  glUniform2f(unif_unitScale, unitScale.x, unitScale.y);
+  
   //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   
   
@@ -268,6 +285,7 @@ int main(int argc, char *argv[]) {
       }
     }
   	
+    
     glClear(GL_COLOR_BUFFER_BIT);_glec
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
 		
