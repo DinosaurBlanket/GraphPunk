@@ -132,9 +132,8 @@ GLuint createShaderProgram(
 }
 
 typedef struct {float x; float y;}                   vec2;
-typedef struct {float x; float y; float z;}          vec3;
-typedef struct {float x; float y; float z; float w;} vec4;
-
+//typedef struct {float x; float y; float z;}          vec3;
+//typedef struct {float x; float y; float z; float w;} vec4;
 //typedef struct {
 //  float c0r0; float c1r0; float c2r0; float c3r0;
 //  float c0r1; float c1r1; float c2r1; float c3r1;
@@ -147,10 +146,30 @@ typedef struct {uint8_t r; uint8_t g; uint8_t b; uint8_t a;} color;
 typedef struct {vec2 p; color c;} uiVert;
 
 
+
+
+#include <time.h>
+typedef struct timespec timespec;
+
+// This function assumes latter >= former
+void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
+  delta->tv_sec = latter->tv_sec - former->tv_sec;
+  if (former->tv_nsec > latter->tv_nsec) { // then we have to carry
+    delta->tv_sec--;
+    delta->tv_nsec = (1e9 - former->tv_nsec) + latter->tv_nsec;
+  }
+  else delta->tv_nsec = latter->tv_nsec - former->tv_nsec;
+}
+
+
+
+
+
 int main(int argc, char *argv[]) {
 	uint32_t videoSizeX = 1280;//pixels
 	uint32_t videoSizeY =  800;
 	uint32_t gridUnit   =   16;
+	float frameRateTarget = 60;
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -262,10 +281,28 @@ int main(int argc, char *argv[]) {
   
   //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   
+  timespec ts_prevFrameStart = {0,0}, ts_newFrameStart = {0,0};
+  timespec ts_compTime = {0,0}, ts_buf = {0,0};
+  timespec ts_frameDelta = {0,0}, ts_frameDeltaTarget = {0,0};
+  clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+  if (frameRateTarget < 1) frameRateTarget = 1; // minimum framerate
+  ts_frameDeltaTarget.tv_sec  = 0;
+  ts_frameDeltaTarget.tv_nsec = 1e9/frameRateTarget;
+  printf("ts_frameDeltaTarget.tv_nsec = %ld\n", ts_frameDeltaTarget.tv_nsec);
+  //int sleepBias = -100000; // nsec
   
-  int curFrame = 0;
+  int curFrame = -1;
   bool running = true;
 	while (running) {
+    ts_prevFrameStart = ts_newFrameStart;
+    clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+    getTimeDelta(&ts_prevFrameStart, &ts_newFrameStart, &ts_frameDelta);
+    printf(
+      "ts_frameDelta: %1ld s, %9ld ns,   ts_compTime: %9ld ns\n",
+      ts_frameDelta.tv_sec, ts_frameDelta.tv_nsec, ts_compTime.tv_nsec
+    );
+    curFrame++;
+    
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -291,9 +328,24 @@ int main(int argc, char *argv[]) {
 		
 		
 		SDL_GL_SwapWindow(window);_sdlec
-		
-		SDL_Delay(16);
-    curFrame++;
+    
+		clock_gettime(CLOCK_MONOTONIC, &ts_buf);
+    getTimeDelta(&ts_newFrameStart, &ts_buf, &ts_compTime);
+    if (
+      ts_compTime.tv_sec || 
+      ts_compTime.tv_nsec >= ts_frameDeltaTarget.tv_nsec
+    ) {
+      printf(
+        "warning: framerate is below target\n\tts_compTime: %3ld s, %9ld ns\n",
+        ts_compTime.tv_sec, ts_compTime.tv_nsec
+      );
+      continue;
+    }
+    ts_buf.tv_sec = 0;
+    ts_buf.tv_nsec = 
+      (ts_frameDeltaTarget.tv_nsec - ts_compTime.tv_nsec)// + sleepBias
+    ;
+		nanosleep(&ts_buf, NULL);
 	}
 	
 	SDL_GL_DeleteContext(GLcontext);_sdlec

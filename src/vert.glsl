@@ -2,7 +2,6 @@
 
 uniform vec2 unitScale;
 //uniform vec2 scroll;
-
 in      vec2 pos;
 in      vec4 color;
 out     vec4 colorToFrag;
