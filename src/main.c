@@ -8,6 +8,7 @@
 typedef unsigned int uint;
 
 #define CHECK_SDL_GL_ERRORS true
+#define LOG_TIMING          false
 
 #if CHECK_SDL_GL_ERRORS
   void glec(const int line, const char *file) {
@@ -151,7 +152,7 @@ typedef struct {vec2 p; color c;} uiVert;
 #include <time.h>
 typedef struct timespec timespec;
 
-// This function assumes latter >= former
+// This function assumes latter >= former, always use monotonic clock
 void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
   delta->tv_sec = latter->tv_sec - former->tv_sec;
   if (former->tv_nsec > latter->tv_nsec) { // then we have to carry
@@ -169,7 +170,6 @@ int main(int argc, char *argv[]) {
 	uint32_t videoSizeX = 1280;//pixels
 	uint32_t videoSizeY =  800;
 	uint32_t gridUnit   =   16;
-	float frameRateTarget = 60;
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -282,26 +282,24 @@ int main(int argc, char *argv[]) {
   //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   
   timespec ts_prevFrameStart = {0,0}, ts_newFrameStart = {0,0};
-  timespec ts_compTime = {0,0}, ts_buf = {0,0};
-  timespec ts_frameDelta = {0,0}, ts_frameDeltaTarget = {0,0};
+  timespec ts_frameDelta = {0,0};
+  #if LOG_TIMING
+  timespec ts_compTime = {0,0}, ts_now = {0,0};
+  #endif
   clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
-  if (frameRateTarget < 1) frameRateTarget = 1; // minimum framerate
-  ts_frameDeltaTarget.tv_sec  = 0;
-  ts_frameDeltaTarget.tv_nsec = 1e9/frameRateTarget;
-  printf("ts_frameDeltaTarget.tv_nsec = %ld\n", ts_frameDeltaTarget.tv_nsec);
-  //int sleepBias = -100000; // nsec
   
-  int curFrame = -1;
+  int curFrame = 0;
   bool running = true;
 	while (running) {
     ts_prevFrameStart = ts_newFrameStart;
     clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
     getTimeDelta(&ts_prevFrameStart, &ts_newFrameStart, &ts_frameDelta);
+    #if LOG_TIMING
     printf(
-      "ts_frameDelta: %1ld s, %9ld ns,   ts_compTime: %9ld ns\n",
-      ts_frameDelta.tv_sec, ts_frameDelta.tv_nsec, ts_compTime.tv_nsec
+      "ts_frameDelta: %1ld s, %9ld ns\n",
+      ts_frameDelta.tv_sec, ts_frameDelta.tv_nsec
     );
-    curFrame++;
+    #endif
     
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -323,29 +321,22 @@ int main(int argc, char *argv[]) {
     }
   	
     
-    glClear(GL_COLOR_BUFFER_BIT);_glec
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
 		
-		
-		SDL_GL_SwapWindow(window);_sdlec
     
-		clock_gettime(CLOCK_MONOTONIC, &ts_buf);
-    getTimeDelta(&ts_newFrameStart, &ts_buf, &ts_compTime);
-    if (
-      ts_compTime.tv_sec || 
-      ts_compTime.tv_nsec >= ts_frameDeltaTarget.tv_nsec
-    ) {
-      printf(
-        "warning: framerate is below target\n\tts_compTime: %3ld s, %9ld ns\n",
-        ts_compTime.tv_sec, ts_compTime.tv_nsec
-      );
-      continue;
-    }
-    ts_buf.tv_sec = 0;
-    ts_buf.tv_nsec = 
-      (ts_frameDeltaTarget.tv_nsec - ts_compTime.tv_nsec)// + sleepBias
-    ;
-		nanosleep(&ts_buf, NULL);
+    #if LOG_TIMING
+		clock_gettime(CLOCK_MONOTONIC, &ts_now);
+    getTimeDelta(&ts_newFrameStart, &ts_now, &ts_compTime);
+    printf(
+      "ts_compTime: %3ld s, %9ld ns\n",
+      ts_compTime.tv_sec, ts_compTime.tv_nsec
+    );
+    #endif
+    
+		SDL_GL_SwapWindow(window);_sdlec
+    // this is to remind me to only ever call glClear right after Swap
+    if (false) glClear(GL_COLOR_BUFFER_BIT);_glec
+    curFrame++;
 	}
 	
 	SDL_GL_DeleteContext(GLcontext);_sdlec
