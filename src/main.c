@@ -133,8 +133,13 @@ GLuint createShaderProgram(
 }
 
 typedef struct {float x; float y;}                   vec2;
-//typedef struct {float x; float y; float z;}          vec3;
+typedef struct {float x; float y; float z;}          vec3;
 //typedef struct {float x; float y; float z; float w;} vec4;
+void printVec3(vec3 v) {printf("%f, %f, %f\n", v.x, v.y, v.z);}
+bool eqVec3(vec3 vl, vec3 vr) {
+  return vl.x == vr.x && vl.y == vr.y && vl.z == vr.z;
+}
+
 //typedef struct {
 //  float c0r0; float c1r0; float c2r0; float c3r0;
 //  float c0r1; float c1r1; float c2r1; float c3r1;
@@ -233,8 +238,6 @@ int main(int argc, char *argv[]) {
   glGenVertexArrays(1, &vao);_glec
   glBindVertexArray(vao);_glec
   
-  glClearColor(0.0,0.2,0.3,1.0);_glec
-  
   GLuint vbo;
   GLuint ebo;
   glGenBuffers(1, &vbo);_glec
@@ -281,19 +284,25 @@ int main(int argc, char *argv[]) {
   
   //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   
-  timespec ts_prevFrameStart = {0,0}, ts_newFrameStart = {0,0};
+  timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timespec ts_frameDelta = {0,0};
   #if LOG_TIMING
   timespec ts_compTime = {0,0}, ts_now = {0,0};
   #endif
   clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
   
+  vec3  newCursor = {0,0,0};
+  vec3  oldCursor = {0,0,0};
+  
   int curFrame = 0;
   bool running = true;
+  
+  glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
+  
 	while (running) {
-    ts_prevFrameStart = ts_newFrameStart;
+    ts_oldFrameStart = ts_newFrameStart;
     clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
-    getTimeDelta(&ts_prevFrameStart, &ts_newFrameStart, &ts_frameDelta);
+    getTimeDelta(&ts_oldFrameStart, &ts_newFrameStart, &ts_frameDelta);
     #if LOG_TIMING
     printf(
       "ts_frameDelta: %1ld s, %9ld ns\n",
@@ -301,28 +310,32 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
+    oldCursor = newCursor;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
+          newCursor.x = event.motion.x;
+          newCursor.y = event.motion.y;
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT:  break;
+            case SDL_BUTTON_LEFT: newCursor.z = 1; break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT:  break;
+            case SDL_BUTTON_LEFT: newCursor.z = 0; break;
           }
           break;
       }
     }
-  	
     
-    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
-		
+    if (!eqVec3(oldCursor, newCursor)) {
+      printVec3(newCursor);
+      glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
+    }
     
     #if LOG_TIMING
 		clock_gettime(CLOCK_MONOTONIC, &ts_now);
@@ -335,7 +348,7 @@ int main(int argc, char *argv[]) {
     
 		SDL_GL_SwapWindow(window);_sdlec
     // this is to remind me to only ever call glClear right after Swap
-    if (false) glClear(GL_COLOR_BUFFER_BIT);_glec
+    //glClear(GL_COLOR_BUFFER_BIT);_glec
     curFrame++;
 	}
 	
