@@ -174,6 +174,7 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 int main(int argc, char *argv[]) {
 	uint32_t videoSizeX = 1280;//pixels
 	uint32_t videoSizeY =  800;
+  vec2     videoSize  = {videoSizeX, videoSizeY};
 	uint32_t gridUnit   =   16;
 	
 	SDL_Window    *window    = NULL;
@@ -281,8 +282,8 @@ int main(int argc, char *argv[]) {
   
   GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");
   glUniform2f(unif_unitScale, unitScale.x, unitScale.y);
-  
-  //GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
+  GLint unif_scroll    = glGetUniformLocation(shaderProgram, "scroll");
+  glUniform2f(unif_scroll, 0, 0);
   
   timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timespec ts_frameDelta = {0,0};
@@ -291,8 +292,9 @@ int main(int argc, char *argv[]) {
   #endif
   clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
   
-  vec3  newCursor = {0,0,0};
-  vec3  oldCursor = {0,0,0};
+  vec3 newCurs = {0,0,0}; // normalized, -1 to 1 for x and y
+  vec3 oldCurs = {0,0,0};
+  vec2 scrollPos = {0,0};
   
   int curFrame = 0;
   bool running = true;
@@ -310,31 +312,39 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    oldCursor = newCursor;
+    oldCurs = newCurs;
+    bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          newCursor.x = event.motion.x;
-          newCursor.y = event.motion.y;
+          newCurs.x = (event.motion.x - videoSize.x/2)/ (videoSize.x/2);
+          newCurs.y = (event.motion.y - videoSize.y/2)/-(videoSize.y/2);
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCursor.z = 1; break;
+            case SDL_BUTTON_LEFT: newCurs.z = 1; break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCursor.z = 0; break;
+            case SDL_BUTTON_LEFT: newCurs.z = 0; break;
           }
           break;
       }
     }
     
-    if (!eqVec3(oldCursor, newCursor)) {
-      printVec3(newCursor);
+    if (newCurs.z && (newCurs.x != oldCurs.x || newCurs.y != oldCurs.y)) {
+      scrollPos.x += newCurs.x - oldCurs.x;
+      scrollPos.y += newCurs.y - oldCurs.y;
+      glUniform2f(unif_scroll, scrollPos.x, scrollPos.y);
+      redraw = true;
+    }
+    
+    if (redraw) {
       glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
+      redraw = false;
     }
     
     #if LOG_TIMING
