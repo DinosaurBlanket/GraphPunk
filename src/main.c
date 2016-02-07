@@ -132,32 +132,22 @@ GLuint createShaderProgram(
   return shaderProgram;
 }
 
-typedef struct {float x; float y;}                   vec2;
-typedef struct {float x; float y; float z;}          vec3;
-//typedef struct {float x; float y; float z; float w;} vec4;
-void printVec3(vec3 v) {printf("%f, %f, %f\n", v.x, v.y, v.z);}
-bool eqVec3(vec3 vl, vec3 vr) {
-  return vl.x == vr.x && vl.y == vr.y && vl.z == vr.z;
+
+typedef struct {float p[2]; uint8_t c[4];} uiVert;
+
+#define fr(i, bound) for (int i = 0; i < (bound); i++)
+
+void ncopy(float *d, const float *s, int c) {fr(i,c) {d[i] = s[i];}}
+bool allEq(const float *l, const float *r, int c) {
+  fr(i,c) {if (l[i] != r[i]) return false;}
+  return true;
 }
-
-//typedef struct {
-//  float c0r0; float c1r0; float c2r0; float c3r0;
-//  float c0r1; float c1r1; float c2r1; float c3r1;
-//  float c0r2; float c1r2; float c2r2; float c3r2;
-//  float c0r3; float c1r3; float c2r3; float c3r3;
-//} mat4;
-
-typedef struct {uint8_t r; uint8_t g; uint8_t b; uint8_t a;} color;
-
-typedef struct {vec2 p; color c;} uiVert;
-
-
 
 
 #include <time.h>
 typedef struct timespec timespec;
 
-// This function assumes latter >= former, always use monotonic clock
+// This function assumes latter >= former
 void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
   delta->tv_sec = latter->tv_sec - former->tv_sec;
   if (former->tv_nsec > latter->tv_nsec) { // then we have to carry
@@ -172,10 +162,10 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 
 
 int main(int argc, char *argv[]) {
-	uint32_t videoSizeX = 1280;//pixels
-	uint32_t videoSizeY =  800;
-  vec2     videoSize  = {videoSizeX, videoSizeY};
-	uint32_t gridUnit   =   16;
+	uint32_t videoSizeX   = 1280;//pixels
+	uint32_t videoSizeY   =  800;
+  float    videoSize[2] = {videoSizeX, videoSizeY};
+	uint32_t gridUnit     =   16;
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -229,7 +219,7 @@ int main(int argc, char *argv[]) {
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
   
-  vec2 unitScale = {
+  float unitScale[2] = {
     (float)(gridUnit*2)/(float)videoSizeX,
     (float)(gridUnit*2)/(float)videoSizeY
   };
@@ -281,8 +271,8 @@ int main(int argc, char *argv[]) {
   
   
   GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");
-  glUniform2f(unif_unitScale, unitScale.x, unitScale.y);
-  GLint unif_scroll    = glGetUniformLocation(shaderProgram, "scroll");
+  glUniform2f(unif_unitScale, unitScale[0], unitScale[1]);
+  GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   glUniform2f(unif_scroll, 0, 0);
   
   timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
@@ -292,9 +282,10 @@ int main(int argc, char *argv[]) {
   #endif
   clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
   
-  vec3 newCurs = {0,0,0}; // normalized, -1 to 1 for x and y
-  vec3 oldCurs = {0,0,0};
-  vec2 scrollPos = {0,0};
+  // normalized, -1 to 1 for x and y, 0 to 1 for z
+  float newCurs[3]   = {0};
+  float oldCurs[3]   = {0};
+  float scrollPos[2] = {0};
   
   int curFrame = 0;
   bool running = true;
@@ -312,37 +303,36 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    oldCurs = newCurs;
+    ncopy(oldCurs, newCurs, 3);
     bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          newCurs.x = (event.motion.x - videoSize.x/2)/ (videoSize.x/2);
-          newCurs.y = (event.motion.y - videoSize.y/2)/-(videoSize.y/2);
+          newCurs[0] = event.motion.x;
+          newCurs[1] = event.motion.y;
+          fr(i,2) {newCurs[i] = (newCurs[i]-videoSize[i]/2)/(videoSize[i]/2);}
+          newCurs[1] *= -1;
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs.z = 1; break;
+            case SDL_BUTTON_LEFT: newCurs[2] = 1.0; break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs.z = 0; break;
+            case SDL_BUTTON_LEFT: newCurs[2] = 0.0; break;
           }
           break;
       }
     }
     
-    if (newCurs.z && (newCurs.x != oldCurs.x || newCurs.y != oldCurs.y)) {
-      scrollPos.x += newCurs.x - oldCurs.x;
-      scrollPos.y += newCurs.y - oldCurs.y;
-      glUniform2f(unif_scroll, scrollPos.x, scrollPos.y);
-      redraw = true;
-    }
+    if (newCurs[2] && !allEq(newCurs, oldCurs, 2)) redraw = true;
     
     if (redraw) {
+      fr(i,2) {scrollPos[i] += newCurs[i] - oldCurs[i];}
+      glUniform2f(unif_scroll, scrollPos[0], scrollPos[1]);
       glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
       redraw = false;
     }
