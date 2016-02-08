@@ -8,7 +8,7 @@
 typedef unsigned int uint;
 
 #define CHECK_SDL_GL_ERRORS true
-#define LOG_TIMING          false
+#define LOG_TIMING          true
 
 #if CHECK_SDL_GL_ERRORS
   void glec(const int line, const char *file) {
@@ -142,6 +142,7 @@ bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
   return true;
 }
+//bool any(const float *a, int c) {fr(i,c) {if(a[i]) return true;} return false;}
 
 
 #include <time.h>
@@ -285,7 +286,9 @@ int main(int argc, char *argv[]) {
   // normalized, -1 to 1 for x and y, 0 to 1 for z
   float newCurs[3]   = {0};
   float oldCurs[3]   = {0};
-  float scrollPos[2] = {0};
+  float newScrollPos[2] = {0};
+  float oldScrollPos[2] = {0};
+  float inertia[2]   = {0};
   
   int curFrame = 0;
   bool running = true;
@@ -328,11 +331,28 @@ int main(int argc, char *argv[]) {
       }
     }
     
-    if (newCurs[2] && !allEq(newCurs, oldCurs, 2)) redraw = true;
+    ncopy(oldScrollPos, newScrollPos, 2);
+    if (newCurs[2]) {
+      if (oldCurs[2]) {
+        fr(i,2) {newScrollPos[i] += newCurs[i] - oldCurs[i];}
+      }
+      else {
+        fr(i,2) {inertia[i] = 0;}
+      }
+    }
+    else {
+      if (oldCurs[2]) {
+        fr(i,2) {inertia[i] = newCurs[i] - oldCurs[i];}
+      }
+      fr(i,2) {newScrollPos[i] += inertia[i];}
+    }
+    
+    if (!allEq(newScrollPos, oldScrollPos, 3)) {
+      glUniform2f(unif_scroll, newScrollPos[0], newScrollPos[1]);
+      redraw = true;
+    }
     
     if (redraw) {
-      fr(i,2) {scrollPos[i] += newCurs[i] - oldCurs[i];}
-      glUniform2f(unif_scroll, scrollPos[0], scrollPos[1]);
       glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
       redraw = false;
     }
@@ -347,8 +367,6 @@ int main(int argc, char *argv[]) {
     #endif
     
 		SDL_GL_SwapWindow(window);_sdlec
-    // this is to remind me to only ever call glClear right after Swap
-    //glClear(GL_COLOR_BUFFER_BIT);_glec
     curFrame++;
 	}
 	
