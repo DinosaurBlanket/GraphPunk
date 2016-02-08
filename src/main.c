@@ -8,7 +8,7 @@
 typedef unsigned int uint;
 
 #define CHECK_SDL_GL_ERRORS true
-#define LOG_TIMING          true
+#define LOG_TIMING          false
 
 #if CHECK_SDL_GL_ERRORS
   void glec(const int line, const char *file) {
@@ -163,10 +163,8 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 
 
 int main(int argc, char *argv[]) {
-	uint32_t videoSizeX   = 1280;//pixels
-	uint32_t videoSizeY   =  800;
-  float    videoSize[2] = {videoSizeX, videoSizeY};
-	uint32_t gridUnit     =   16;
+  float videoSize[2] = {1280, 800}; // pixels
+	float gridUnit = 16; // pixels
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -178,8 +176,8 @@ int main(int argc, char *argv[]) {
 		"GraphPunk",               //const char* title,
 		SDL_WINDOWPOS_UNDEFINED,   //int         x,
 		SDL_WINDOWPOS_UNDEFINED,   //int         y,
-		videoSizeX,                //int         w,
-		videoSizeY,                //int         h,
+		videoSize[0],              //int         w,
+		videoSize[1],              //int         h,
 		SDL_WINDOW_OPENGL          //Uint32      flags
 	);_sdlec
 	GLcontext = SDL_GL_CreateContext(window);_sdlec
@@ -198,32 +196,38 @@ int main(int argc, char *argv[]) {
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
   
-  
+  float plnSz[4] = {-60, 60, 60, -60}; // in units, XYXY, top-left and bot-right
   uiVert vertices[] = {
-    // plane
-    {.p = {-120.0f,  120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 0
-    {.p = { 120.0f,  120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 1
-    {.p = { 120.0f, -120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 2
-    {.p = {-120.0f, -120.0f}, .c = {0, 0xFF, 0, 0xFF}}, // 3
+    // inside border
+    {.p = {plnSz[0]+1, plnSz[1]-1}, .c = {0, 0xFF, 0, 0xFF}}, //  0 tl
+    {.p = {plnSz[2]-1, plnSz[1]-1}, .c = {0, 0xFF, 0, 0xFF}}, //  1 tr
+    {.p = {plnSz[2]-1, plnSz[3]+1}, .c = {0, 0xFF, 0, 0xFF}}, //  2 br
+    {.p = {plnSz[0]+1, plnSz[3]+1}, .c = {0, 0xFF, 0, 0xFF}}, //  3 bl
+    // outside border
+    {.p = {plnSz[0],   plnSz[1]},   .c = {0xFF, 0, 0, 0xFF}}, //  4 tl
+    {.p = {plnSz[2],   plnSz[1]},   .c = {0xFF, 0, 0, 0xFF}}, //  5 tr
+    {.p = {plnSz[2],   plnSz[3]},   .c = {0xFF, 0, 0, 0xFF}}, //  6 br
+    {.p = {plnSz[0],   plnSz[3]},   .c = {0xFF, 0, 0, 0xFF}}, //  7 bl
     // center marker
-    {.p = { 0.0f,  1.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 4
-    {.p = { 1.0f,  0.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 5
-    {.p = { 0.0f, -1.0f},     .c = {0, 0, 0xFF, 0xFF}}, // 6
-    {.p = {-1.0f,  0.0f},     .c = {0, 0, 0xFF, 0xFF}}  // 7
+    {.p = { 0.0f,  1.0f},           .c = {0, 0, 0xFF, 0xFF}}, //  8 t
+    {.p = { 1.0f,  0.0f},           .c = {0, 0, 0xFF, 0xFF}}, //  9 r
+    {.p = { 0.0f, -1.0f},           .c = {0, 0, 0xFF, 0xFF}}, // 10 b
+    {.p = {-1.0f,  0.0f},           .c = {0, 0, 0xFF, 0xFF}}  // 11 l
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
-    // plane
+    // plane inside border
     0,1,3, 1,2,3,
+    // border
+    4,5,0, 5,1,0,  5,6,1, 1,6,2,  3,6,7, 3,2,6,  4,3,7, 4,0,3,
     // center marker
-    4,5,7, 5,6,7
+    8,9,11, 11,10,9
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
   
-  float unitScale[2] = {
-    (float)(gridUnit*2)/(float)videoSizeX,
-    (float)(gridUnit*2)/(float)videoSizeY
-  };
+  float unitScale[2];
+  fr(i,2) {unitScale[i] = gridUnit/(videoSize[i]/2);}
+  
   
   
   GLuint vao;
@@ -333,17 +337,11 @@ int main(int argc, char *argv[]) {
     
     ncopy(oldScrollPos, newScrollPos, 2);
     if (newCurs[2]) {
-      if (oldCurs[2]) {
-        fr(i,2) {newScrollPos[i] += newCurs[i] - oldCurs[i];}
-      }
-      else {
-        fr(i,2) {inertia[i] = 0;}
-      }
+      if (oldCurs[2]) {fr(i,2) {newScrollPos[i] += newCurs[i] - oldCurs[i];}}
+      else {fr(i,2) {inertia[i] = 0;}}
     }
     else {
-      if (oldCurs[2]) {
-        fr(i,2) {inertia[i] = newCurs[i] - oldCurs[i];}
-      }
+      if (oldCurs[2]) {fr(i,2) {inertia[i] = newCurs[i] - oldCurs[i];}}
       fr(i,2) {newScrollPos[i] += inertia[i];}
     }
     
