@@ -5,138 +5,12 @@
 #define  GLEW_STATIC
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
-typedef unsigned int uint;
 
-#define CHECK_SDL_GL_ERRORS true
-#define LOG_TIMING          false
+#include "optionsAndErrors.h"
+#include "oglTools.h"
 
-#if CHECK_SDL_GL_ERRORS
-  void glec(const int line, const char *file) {
-    GLenum GLstatus;
-    while ((GLstatus = glGetError()) != GL_NO_ERROR) {
-      printf("OpenGL error: %i on line %i in %s\n", GLstatus, line, file);
-    }
-  }
-  #define _glec glec(__LINE__, __FILE__);
-  void sdlec(int line, const char *file) {
-    const char *error = SDL_GetError();
-    if (!error || !error[0]) return;
-  	printf("SDL error at line %i in %s :\n%s", line, file, error);
-    SDL_ClearError();
-    exit(-10);
-  }
-  #define _sdlec sdlec(__LINE__, __FILE__);
-#else
-  #define _glec
-  #define _sdlec
-#endif
-
-
-#include <sys/stat.h>
-int getFileSize(const char *restrict path) {
-  struct stat st;
-  stat(path, &st);
-  return st.st_size;
-}
-
-void print_CouldNotOpenFile(const char *path) {
-  printf("error: could not open file \"%s\"\n", path);
-}
-int stringFromFile(const char *restrict path, char *dest, uint32_t maxWrite) {
-  if (!dest || !path || maxWrite < 1) return 0;
-  FILE *fp = fopen(path, "r");
-  if (!fp) {
-    print_CouldNotOpenFile(path);
-    return 0;
-  }
-  int c, i = 0;
-  for (; i < maxWrite; i++) {
-    c = fgetc(fp);
-    if (c == EOF) {
-      dest[i] = '\0';
-      break;
-    }
-    dest[i] = c;
-  }
-  fclose(fp);
-  return i;
-}
-
-
-GLuint createShaderProgram(
-  const char *vertPath, 
-  const char *fragPath, 
-  const char *progName
-) {
-  int vertSourceSize, fragSourceSize, textBufSize = 1024;
-  
-  vertSourceSize = getFileSize(vertPath);
-  if (!vertSourceSize) {
-    print_CouldNotOpenFile(vertPath);
-    return 0;
-  }
-  if (vertSourceSize > textBufSize) textBufSize = vertSourceSize + 1;
-  
-  fragSourceSize = getFileSize(fragPath);
-  if (!fragSourceSize) {
-    print_CouldNotOpenFile(fragPath);
-    return 0;
-  }
-  if (fragSourceSize > textBufSize) textBufSize = fragSourceSize + 1;
-  
-  char *textBuf = malloc(textBufSize);
-  GLint success;
-  const char *compileErrorString = "error compiling shader \"%s\":\n%s\n";
-  
-  GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);_glec
-  stringFromFile(vertPath, textBuf, textBufSize);
-  glShaderSource(vertShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
-  glCompileShader(vertShader);_glec
-  glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);_glec
-  if (!success) {
-    glGetShaderInfoLog(vertShader, textBufSize, NULL, textBuf);_glec
-    printf(compileErrorString, vertPath, textBuf);
-    return 0;
-  }
-  
-  GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);_glec
-  stringFromFile(fragPath, textBuf, textBufSize);
-  glShaderSource(fragShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
-  glCompileShader(fragShader);_glec
-  glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);_glec
-  if (!success) {
-    glGetShaderInfoLog(fragShader, textBufSize, NULL, textBuf);_glec
-    printf(compileErrorString, fragPath, textBuf);
-    return 0;
-  }
-  
-  GLuint shaderProgram = glCreateProgram();_glec
-  glAttachShader(shaderProgram, vertShader);_glec
-  glAttachShader(shaderProgram, fragShader);_glec
-  glLinkProgram(shaderProgram);_glec
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);_glec
-  if (!success) {
-    glGetShaderInfoLog(shaderProgram, textBufSize, NULL, textBuf);_glec
-    printf("error linking shader program \"%s\":\n%s\n", progName, textBuf);
-    return 0;
-  }
-  glValidateProgram(shaderProgram);_glec
-  glGetProgramiv(shaderProgram, GL_VALIDATE_STATUS, &success);_glec
-  if (!success) {
-    glGetShaderInfoLog(shaderProgram, textBufSize, NULL, textBuf);_glec
-    printf("error: invalid shader program \"%s\":\n%s\n", progName, textBuf);
-    return 0;
-  }
-  
-  free(textBuf);
-  return shaderProgram;
-}
-
-
-typedef struct {float p[2]; uint8_t c[4];} uiVert;
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
-
 void ncopy(float *d, const float *s, int c) {fr(i,c) {d[i] = s[i];}}
 bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
@@ -147,7 +21,6 @@ bool allEq(const float *l, const float *r, int c) {
 
 #include <time.h>
 typedef struct timespec timespec;
-
 // This function assumes latter >= former
 void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
   delta->tv_sec = latter->tv_sec - former->tv_sec;
@@ -159,7 +32,7 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 }
 
 
-
+typedef struct {float p[2]; uint8_t c[4];} uiVert;
 
 
 int main(int argc, char *argv[]) {
