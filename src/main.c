@@ -11,7 +11,6 @@
 
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
-void ncopy(float *d, const float *s, int c) {fr(i,c) {d[i] = s[i];}}
 bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
   return true;
@@ -183,7 +182,7 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    ncopy(oldCurs, newCurs, 3);
+    fr(i,3) {oldCurs[i] = newCurs[i];}
     bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -208,7 +207,7 @@ int main(int argc, char *argv[]) {
       }
     }
     
-    ncopy(oldScrollPos, newScrollPos, 2);
+    fr(i,2) {oldScrollPos[i] = newScrollPos[i];}
     if (newCurs[2]) {
       if (oldCurs[2]) {fr(i,2) {newScrollPos[i] += newCurs[i] - oldCurs[i];}}
       else {fr(i,2) {inertia[i] = 0;}}
@@ -219,7 +218,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (!allEq(newScrollPos, oldScrollPos, 3)) {
-      glUniform2f(unif_scroll, newScrollPos[0], newScrollPos[1]);
+      glUniform2f(unif_scroll, newScrollPos[0], newScrollPos[1]);_glec
       redraw = true;
     }
     
