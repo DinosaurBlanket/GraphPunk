@@ -2,11 +2,12 @@
 
 uniform vec2 unitScale;
 uniform vec2 scroll;
-in      vec2 pos;
-in      vec4 color;
-out     vec4 colorToFrag;
+
+in  vec2 pos;
+in  vec2 texCoord;
+out vec2 texCoordThru;
 
 void main() {
-  colorToFrag = color;
+  texCoordThru = texCoord;
   gl_Position = vec4(pos*unitScale + scroll, 0.0, 1.0);
 }

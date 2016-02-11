@@ -15,7 +15,6 @@ bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
   return true;
 }
-//bool any(const float *a, int c) {fr(i,c) {if(a[i]) return true;} return false;}
 
 
 #include <time.h>
@@ -31,12 +30,12 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 }
 
 
-typedef struct {float p[2]; uint8_t c[4];} uiVert;
+typedef struct {float x; float y; float s; float t;} uiVert;
 
 
 int main(int argc, char *argv[]) {
   float videoSize[2] = {1280, 800}; // pixels
-	float gridUnit = 16; // pixels
+	float gridUnit = 32; // pixels
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -68,23 +67,18 @@ int main(int argc, char *argv[]) {
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
   
-  float plnSz[4] = {-60, 60, 60, -60}; // in units, XYXY, top-left and bot-right
+  float plnSz[4] = {-30, 30, 30, -30}; // in units, XYXY, top-left and bot-right
   uiVert vertices[] = {
     // inside border
-    {.p = {plnSz[0]+1, plnSz[1]-1}, .c = {0, 0xFF, 0, 0xFF}}, //  0 tl
-    {.p = {plnSz[2]-1, plnSz[1]-1}, .c = {0, 0xFF, 0, 0xFF}}, //  1 tr
-    {.p = {plnSz[2]-1, plnSz[3]+1}, .c = {0, 0xFF, 0, 0xFF}}, //  2 br
-    {.p = {plnSz[0]+1, plnSz[3]+1}, .c = {0, 0xFF, 0, 0xFF}}, //  3 bl
+    {plnSz[0]+1, plnSz[1]-1, plnSz[0]+1, plnSz[1]-1}, //  0 tl
+    {plnSz[2]-1, plnSz[1]-1, plnSz[2]-1, plnSz[1]-1}, //  1 tr
+    {plnSz[2]-1, plnSz[3]+1, plnSz[2]-1, plnSz[3]+1}, //  2 br
+    {plnSz[0]+1, plnSz[3]+1, plnSz[0]+1, plnSz[3]+1}, //  3 bl
     // outside border
-    {.p = {plnSz[0],   plnSz[1]},   .c = {0xFF, 0, 0, 0xFF}}, //  4 tl
-    {.p = {plnSz[2],   plnSz[1]},   .c = {0xFF, 0, 0, 0xFF}}, //  5 tr
-    {.p = {plnSz[2],   plnSz[3]},   .c = {0xFF, 0, 0, 0xFF}}, //  6 br
-    {.p = {plnSz[0],   plnSz[3]},   .c = {0xFF, 0, 0, 0xFF}}, //  7 bl
-    // center marker
-    {.p = { 0.0f,  1.0f},           .c = {0, 0, 0xFF, 0xFF}}, //  8 t
-    {.p = { 1.0f,  0.0f},           .c = {0, 0, 0xFF, 0xFF}}, //  9 r
-    {.p = { 0.0f, -1.0f},           .c = {0, 0, 0xFF, 0xFF}}, // 10 b
-    {.p = {-1.0f,  0.0f},           .c = {0, 0, 0xFF, 0xFF}}  // 11 l
+    {plnSz[0],   plnSz[1],   plnSz[0]-1, plnSz[1]+1}, //  4 tl
+    {plnSz[2],   plnSz[1],   plnSz[2]+1, plnSz[1]+1}, //  5 tr
+    {plnSz[2],   plnSz[3],   plnSz[2]+1, plnSz[3]-1}, //  6 br
+    {plnSz[0],   plnSz[3],   plnSz[0]-1, plnSz[3]-1}, //  7 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
@@ -92,8 +86,6 @@ int main(int argc, char *argv[]) {
     0,1,3, 1,2,3,
     // border
     4,5,0, 5,1,0,  5,6,1, 1,6,2,  3,6,7, 3,2,6,  4,3,7, 4,0,3,
-    // center marker
-    8,9,11, 11,10,9
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
   
@@ -126,6 +118,7 @@ int main(int argc, char *argv[]) {
   );_glec
   
   
+  
   GLuint shaderProgram = createShaderProgram(
     "src/vert.glsl", 
     "src/frag.glsl", 
@@ -135,22 +128,58 @@ int main(int argc, char *argv[]) {
   glUseProgram(shaderProgram);_glec
   
   
-  GLint attr_pos   = glGetAttribLocation(shaderProgram, "pos"  );_glec
-  GLint attr_color = glGetAttribLocation(shaderProgram, "color");_glec
+  GLint attr_pos      = glGetAttribLocation(shaderProgram, "pos"  );_glec
+  GLint attr_texCoord = glGetAttribLocation(shaderProgram, "texCoord");_glec
   glEnableVertexAttribArray(attr_pos  );_glec
-  glEnableVertexAttribArray(attr_color);_glec
+  glEnableVertexAttribArray(attr_texCoord);_glec
   glVertexAttribPointer(
-    attr_pos,   2, GL_FLOAT,         GL_FALSE, 12, (const GLvoid*)0
+    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
   );_glec
   glVertexAttribPointer(
-    attr_color, 4, GL_UNSIGNED_BYTE, GL_TRUE,  12, (const GLvoid*)8
+    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
   );_glec
-  
   
   GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");
   glUniform2f(unif_unitScale, unitScale[0], unitScale[1]);
   GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   glUniform2f(unif_scroll, 0, 0);
+  
+  GLuint tex;
+  glGenTextures(1, &tex);_glec
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, tex);_glec
+  {
+    SDL_Surface *srfc = SDL_LoadBMP("img/planeWallpaperMarkedRGB.bmp");_sdlec
+    
+    //printf("srfc->w: %d, srfc->h: %d\n", srfc->w, srfc->h);
+    //fr(r, srfc->h) {
+    //  fr(c, srfc->w) {
+    //    uint8_t *pixel = (uint8_t*)srfc->pixels + (srfc->w*r + c)*3;
+    //    printf("%3d %3d %3d - ", *pixel, *(pixel+1), *(pixel+2));
+    //  }
+    //  puts("");
+    //}
+    
+    glTexImage2D(
+      GL_TEXTURE_2D,       // GLenum        target
+      0,                   // GLint         level
+      GL_RGB,              // GLint         internalformat
+      gridUnit,            // GLsizei       width
+      gridUnit,            // GLsizei       height
+      0,                   // GLint         border
+      GL_RGB,              // GLenum        format
+      GL_UNSIGNED_BYTE,    // GLenum        type
+      srfc->pixels         // const GLvoid *data
+    );_glec
+    SDL_FreeSurface(srfc);_sdlec
+  }
+  glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  
+  
   
   timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timespec ts_frameDelta = {0,0};
