@@ -146,7 +146,6 @@ int main(int argc, char *argv[]) {
   
   GLuint tex;
   glGenTextures(1, &tex);_glec
-  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, tex);_glec
   {
     SDL_Surface *srfc = SDL_LoadBMP("img/planeWallpaperMarkedRGB.bmp");_sdlec
