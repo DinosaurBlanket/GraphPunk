@@ -8,6 +8,7 @@
 
 #include "optionsAndErrors.h"
 #include "oglTools.h"
+#include "../img/peptex.h"
 
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
@@ -66,19 +67,24 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
-  
   float plnSz[4] = {-30, 30, 30, -30}; // in units, XYXY, top-left and bot-right
+  _initPeptexData_
   uiVert vertices[] = {
     // inside border
-    {plnSz[0]+1, plnSz[1]-1, plnSz[0]+1, plnSz[1]-1}, //  0 tl
-    {plnSz[2]-1, plnSz[1]-1, plnSz[2]-1, plnSz[1]-1}, //  1 tr
-    {plnSz[2]-1, plnSz[3]+1, plnSz[2]-1, plnSz[3]+1}, //  2 br
-    {plnSz[0]+1, plnSz[3]+1, plnSz[0]+1, plnSz[3]+1}, //  3 bl
+    {plnSz[0]+1, plnSz[1]-1, peptex_body_tl_x, peptex_body_tl_y}, //  0 tl
+    {plnSz[2]-1, plnSz[1]-1, peptex_body_tr_x, peptex_body_tr_y}, //  1 tr
+    {plnSz[2]-1, plnSz[3]+1, peptex_body_br_x, peptex_body_br_y}, //  2 br
+    {plnSz[0]+1, plnSz[3]+1, peptex_body_bl_x, peptex_body_bl_y}, //  3 bl
     // outside border
-    {plnSz[0],   plnSz[1],   plnSz[0]-1, plnSz[1]+1}, //  4 tl
-    {plnSz[2],   plnSz[1],   plnSz[2]+1, plnSz[1]+1}, //  5 tr
-    {plnSz[2],   plnSz[3],   plnSz[2]+1, plnSz[3]-1}, //  6 br
-    {plnSz[0],   plnSz[3],   plnSz[0]-1, plnSz[3]-1}, //  7 bl
+    {plnSz[0],   plnSz[1],   peptex_bord_tl_x, peptex_bord_tl_y}, //  4 tl
+    {plnSz[2],   plnSz[1],   peptex_bord_tr_x, peptex_bord_tr_y}, //  5 tr
+    {plnSz[2],   plnSz[3],   peptex_bord_br_x, peptex_bord_br_y}, //  6 br
+    {plnSz[0],   plnSz[3],   peptex_bord_bl_x, peptex_bord_bl_y}, //  7 bl
+    // center marker
+    {-1, 1,                  peptex_pep_tl_x,  peptex_pep_tl_y},  //  8 tl
+    { 1, 1,                  peptex_pep_tr_x,  peptex_pep_tr_y},  //  9 tr
+    { 1,-1,                  peptex_pep_br_x,  peptex_pep_br_y},  // 10 br
+    {-1,-1,                  peptex_pep_bl_x,  peptex_pep_bl_y}   // 11 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
@@ -86,6 +92,8 @@ int main(int argc, char *argv[]) {
     0,1,3, 1,2,3,
     // border
     4,5,0, 5,1,0,  5,6,1, 1,6,2,  3,6,7, 3,2,6,  4,3,7, 4,0,3,
+    // center marker
+    8,9,11, 9,10,11
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
   
@@ -148,28 +156,24 @@ int main(int argc, char *argv[]) {
   glGenTextures(1, &tex);_glec
   glBindTexture(GL_TEXTURE_2D, tex);_glec
   {
-    SDL_Surface *srfc = SDL_LoadBMP("img/planeWallpaperMarkedRGB.bmp");_sdlec
-    
-    //printf("srfc->w: %d, srfc->h: %d\n", srfc->w, srfc->h);
-    //fr(r, srfc->h) {
-    //  fr(c, srfc->w) {
-    //    uint8_t *pixel = (uint8_t*)srfc->pixels + (srfc->w*r + c)*3;
-    //    printf("%3d %3d %3d - ", *pixel, *(pixel+1), *(pixel+2));
-    //  }
-    //  puts("");
-    //}
+    SDL_Surface *srfc_ = SDL_LoadBMP("img/peptex.bmp");_sdlec
+    SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
+      srfc_, SDL_PIXELFORMAT_ABGR8888, 0
+    );_sdlec
+    SDL_FreeSurface(srfc_);_sdlec
     
     glTexImage2D(
       GL_TEXTURE_2D,       // GLenum        target
       0,                   // GLint         level
-      GL_RGB,              // GLint         internalformat
-      gridUnit,            // GLsizei       width
-      gridUnit,            // GLsizei       height
+      GL_RGBA,             // GLint         internalformat
+      peptex_size_x,       // GLsizei       width
+      peptex_size_y,       // GLsizei       height
       0,                   // GLint         border
-      GL_RGB,              // GLenum        format
+      GL_RGBA,             // GLenum        format
       GL_UNSIGNED_BYTE,    // GLenum        type
       srfc->pixels         // const GLvoid *data
     );_glec
+    
     SDL_FreeSurface(srfc);_sdlec
   }
   glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
