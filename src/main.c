@@ -103,6 +103,9 @@ int main(int argc, char *argv[]) {
   
   
   GLuint vao;
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   glGenVertexArrays(1, &vao);_glec
   glBindVertexArray(vao);_glec
   
