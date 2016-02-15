@@ -1,27 +1,27 @@
-#define _initPeptexData_ \
-const float peptex_size_x      = 64;\
-const float peptex_size_y      = 64;\
-const float peptex_body_tl_x    = 0;\
-const float peptex_body_tl_y    = 33.0f/peptex_size_y;\
-const float peptex_body_tr_x    = 1.0f/peptex_size_x;\
-const float peptex_body_tr_y    = 33.0f/peptex_size_y;\
-const float peptex_body_br_x    = 1.0f/peptex_size_x;\
-const float peptex_body_br_y    = 32.0f/peptex_size_y;\
-const float peptex_body_bl_x    = 0;\
-const float peptex_body_bl_y    = 32.0f/peptex_size_y;\
-const float peptex_bord_tl_x    = 0;\
-const float peptex_bord_tl_y    = 34.0f/peptex_size_y;\
-const float peptex_bord_tr_x    = 1.0f/peptex_size_x;\
-const float peptex_bord_tr_y    = 34.0f/peptex_size_y;\
-const float peptex_bord_br_x    = 1.0f/peptex_size_x;\
-const float peptex_bord_br_y    = 33.0f/peptex_size_y;\
-const float peptex_bord_bl_x    = 0;\
-const float peptex_bord_bl_y    = 33.0f/peptex_size_y;\
-const float peptex_pep_tl_x     = 0;\
-const float peptex_pep_tl_y     = 32.0f/peptex_size_y;\
-const float peptex_pep_tr_x     = 32.0f/peptex_size_x;\
-const float peptex_pep_tr_y     = 32.0f/peptex_size_y;\
-const float peptex_pep_br_x     = 32.0f/peptex_size_x;\
-const float peptex_pep_br_y     = 0;\
-const float peptex_pep_bl_x     = 0;\
-const float peptex_pep_bl_y     = 0;
+#define peptex_size_x  64.0f
+#define peptex_size_y  64.0f
+
+#define peptex_ibord_tl_x  1.0f/peptex_size_x
+#define peptex_ibord_tl_y  34.0f/peptex_size_y
+#define peptex_ibord_tr_x  2.0f/peptex_size_x
+#define peptex_ibord_tr_y  34.0f/peptex_size_y
+#define peptex_ibord_br_x  2.0f/peptex_size_x
+#define peptex_ibord_br_y  33.0f/peptex_size_y
+#define peptex_ibord_bl_x  1.0f/peptex_size_x
+#define peptex_ibord_bl_y  33.0f/peptex_size_y
+#define peptex_obord_tl_x  0.0f
+#define peptex_obord_tl_y  35.0f/peptex_size_y
+#define peptex_obord_tr_x  3.0f/peptex_size_x
+#define peptex_obord_tr_y  35.0f/peptex_size_y
+#define peptex_obord_br_x  3.0f/peptex_size_x
+#define peptex_obord_br_y  32.0f/peptex_size_y
+#define peptex_obord_bl_x  0.0f
+#define peptex_obord_bl_y  32.0f/peptex_size_y
+#define peptex_cntr_tl_x   0.0f
+#define peptex_cntr_tl_y   32.0f/peptex_size_y
+#define peptex_cntr_tr_x   32.0f/peptex_size_x
+#define peptex_cntr_tr_y   32.0f/peptex_size_y
+#define peptex_cntr_br_x   32.0f/peptex_size_x
+#define peptex_cntr_br_y   0.0f
+#define peptex_cntr_bl_x   0.0f
+#define peptex_cntr_bl_y   0.0f

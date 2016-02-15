@@ -68,30 +68,29 @@ int main(int argc, char *argv[]) {
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
   float plnSz[4] = {-30, 30, 30, -30}; // in units, XYXY, top-left and bot-right
-  _initPeptexData_
   uiVert vertices[] = {
     // inside border
-    {plnSz[0]+1, plnSz[1]-1, peptex_body_tl_x, peptex_body_tl_y}, //  0 tl
-    {plnSz[2]-1, plnSz[1]-1, peptex_body_tr_x, peptex_body_tr_y}, //  1 tr
-    {plnSz[2]-1, plnSz[3]+1, peptex_body_br_x, peptex_body_br_y}, //  2 br
-    {plnSz[0]+1, plnSz[3]+1, peptex_body_bl_x, peptex_body_bl_y}, //  3 bl
+    {plnSz[0]+1, plnSz[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
+    {plnSz[2]-1, plnSz[1]-1, peptex_ibord_tr_x, peptex_ibord_tr_y}, //  1 tr
+    {plnSz[2]-1, plnSz[3]+1, peptex_ibord_br_x, peptex_ibord_br_y}, //  2 br
+    {plnSz[0]+1, plnSz[3]+1, peptex_ibord_bl_x, peptex_ibord_bl_y}, //  3 bl
     // outside border
-    {plnSz[0],   plnSz[1],   peptex_bord_tl_x, peptex_bord_tl_y}, //  4 tl
-    {plnSz[2],   plnSz[1],   peptex_bord_tr_x, peptex_bord_tr_y}, //  5 tr
-    {plnSz[2],   plnSz[3],   peptex_bord_br_x, peptex_bord_br_y}, //  6 br
-    {plnSz[0],   plnSz[3],   peptex_bord_bl_x, peptex_bord_bl_y}, //  7 bl
+    {plnSz[0],   plnSz[1],   peptex_obord_tl_x, peptex_obord_tl_y}, //  4 tl
+    {plnSz[2],   plnSz[1],   peptex_obord_tr_x, peptex_obord_tr_y}, //  5 tr
+    {plnSz[2],   plnSz[3],   peptex_obord_br_x, peptex_obord_br_y}, //  6 br
+    {plnSz[0],   plnSz[3],   peptex_obord_bl_x, peptex_obord_bl_y}, //  7 bl
     // center marker
-    {-1, 1,                  peptex_pep_tl_x,  peptex_pep_tl_y},  //  8 tl
-    { 1, 1,                  peptex_pep_tr_x,  peptex_pep_tr_y},  //  9 tr
-    { 1,-1,                  peptex_pep_br_x,  peptex_pep_br_y},  // 10 br
-    {-1,-1,                  peptex_pep_bl_x,  peptex_pep_bl_y}   // 11 bl
+    {-1, 1,                  peptex_cntr_tl_x,  peptex_cntr_tl_y},  //  8 tl
+    { 1, 1,                  peptex_cntr_tr_x,  peptex_cntr_tr_y},  //  9 tr
+    { 1,-1,                  peptex_cntr_br_x,  peptex_cntr_br_y},  // 10 br
+    {-1,-1,                  peptex_cntr_bl_x,  peptex_cntr_bl_y}   // 11 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
-    // plane inside border
+    // inside border
     0,1,3, 1,2,3,
-    // border
-    4,5,0, 5,1,0,  5,6,1, 1,6,2,  3,6,7, 3,2,6,  4,3,7, 4,0,3,
+    // outside border
+    4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3,
     // center marker
     8,9,11, 9,10,11
   };
