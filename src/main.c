@@ -12,6 +12,7 @@
 
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
+
 bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
   return true;
@@ -35,7 +36,7 @@ typedef struct {float x; float y; float s; float t;} uiVert;
 
 
 int main(int argc, char *argv[]) {
-  float videoSize[2] = {1280, 800}; // pixels
+  float videoSize[2] = {800, 600}; // pixels
 	float gridUnit = 32; // pixels
 	
 	SDL_Window    *window    = NULL;
@@ -67,7 +68,11 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
-  float plnSz[4] = {-30, 30, 30, -30}; // in units, XYXY, top-left and bot-right
+  
+  float plnSz[4] = {
+    -videoSize[0]/gridUnit, videoSize[1]/gridUnit, // tl
+    videoSize[0]/gridUnit, -videoSize[1]/gridUnit  // br
+  }; // in units
   uiVert vertices[] = {
     // inside border
     {plnSz[0]+1, plnSz[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
@@ -80,10 +85,10 @@ int main(int argc, char *argv[]) {
     {plnSz[2],   plnSz[3],   peptex_obord_br_x, peptex_obord_br_y}, //  6 br
     {plnSz[0],   plnSz[3],   peptex_obord_bl_x, peptex_obord_bl_y}, //  7 bl
     // center marker
-    {-1, 1,                  peptex_cntr_tl_x,  peptex_cntr_tl_y},  //  8 tl
-    { 1, 1,                  peptex_cntr_tr_x,  peptex_cntr_tr_y},  //  9 tr
-    { 1,-1,                  peptex_cntr_br_x,  peptex_cntr_br_y},  // 10 br
-    {-1,-1,                  peptex_cntr_bl_x,  peptex_cntr_bl_y}   // 11 bl
+    {-0.5, 0.5,              peptex_cntr_tl_x,  peptex_cntr_tl_y},  //  8 tl
+    { 0.5, 0.5,              peptex_cntr_tr_x,  peptex_cntr_tr_y},  //  9 tr
+    { 0.5,-0.5,              peptex_cntr_br_x,  peptex_cntr_br_y},  // 10 br
+    {-0.5,-0.5,              peptex_cntr_bl_x,  peptex_cntr_bl_y}   // 11 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
@@ -251,7 +256,7 @@ int main(int argc, char *argv[]) {
       fr(i,2) {newScrollPos[i] += inertia[i];}
     }
     
-    if (!allEq(newScrollPos, oldScrollPos, 3)) {
+    if (!allEq(newScrollPos, oldScrollPos, 2)) {
       glUniform2f(unif_scroll, newScrollPos[0], newScrollPos[1]);_glec
       redraw = true;
     }
