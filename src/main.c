@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
+
 #define  GLEW_STATIC
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
@@ -36,8 +38,10 @@ typedef struct {float x; float y; float s; float t;} uiVert;
 
 
 int main(int argc, char *argv[]) {
-  float videoSize[2] = {800, 600}; // pixels
-	float gridUnit = 32; // pixels
+  float videoSize_p2[2] = {800, 600}; // pixels
+	float gridUnit = 32;                // pixels
+  float halfVideoSize_u2[2];          // units
+  fr(i,2) {halfVideoSize_u2[i] = (videoSize_p2[i]/gridUnit)/2.0f;}
 	
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -49,8 +53,8 @@ int main(int argc, char *argv[]) {
 		"GraphPunk",               //const char* title,
 		SDL_WINDOWPOS_UNDEFINED,   //int         x,
 		SDL_WINDOWPOS_UNDEFINED,   //int         y,
-		videoSize[0],              //int         w,
-		videoSize[1],              //int         h,
+		videoSize_p2[0],              //int         w,
+		videoSize_p2[1],              //int         h,
 		SDL_WINDOW_OPENGL          //Uint32      flags
 	);_sdlec
 	GLcontext = SDL_GL_CreateContext(window);_sdlec
@@ -69,26 +73,27 @@ int main(int argc, char *argv[]) {
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
   
-  float plnSz[4] = {
-    -videoSize[0]/gridUnit, videoSize[1]/gridUnit, // tl
-    videoSize[0]/gridUnit, -videoSize[1]/gridUnit  // br
+  float planeCrnrs_u4[4] = {
+    floor(-videoSize_p2[0]/gridUnit), ceil(videoSize_p2[1]/gridUnit), // tl
+    ceil(videoSize_p2[0]/gridUnit), floor(-videoSize_p2[1]/gridUnit)  // br
   }; // in units
+  
   uiVert vertices[] = {
     // inside border
-    {plnSz[0]+1, plnSz[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
-    {plnSz[2]-1, plnSz[1]-1, peptex_ibord_tr_x, peptex_ibord_tr_y}, //  1 tr
-    {plnSz[2]-1, plnSz[3]+1, peptex_ibord_br_x, peptex_ibord_br_y}, //  2 br
-    {plnSz[0]+1, plnSz[3]+1, peptex_ibord_bl_x, peptex_ibord_bl_y}, //  3 bl
+    {planeCrnrs_u4[0]+1, planeCrnrs_u4[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
+    {planeCrnrs_u4[2]-1, planeCrnrs_u4[1]-1, peptex_ibord_tr_x, peptex_ibord_tr_y}, //  1 tr
+    {planeCrnrs_u4[2]-1, planeCrnrs_u4[3]+1, peptex_ibord_br_x, peptex_ibord_br_y}, //  2 br
+    {planeCrnrs_u4[0]+1, planeCrnrs_u4[3]+1, peptex_ibord_bl_x, peptex_ibord_bl_y}, //  3 bl
     // outside border
-    {plnSz[0],   plnSz[1],   peptex_obord_tl_x, peptex_obord_tl_y}, //  4 tl
-    {plnSz[2],   plnSz[1],   peptex_obord_tr_x, peptex_obord_tr_y}, //  5 tr
-    {plnSz[2],   plnSz[3],   peptex_obord_br_x, peptex_obord_br_y}, //  6 br
-    {plnSz[0],   plnSz[3],   peptex_obord_bl_x, peptex_obord_bl_y}, //  7 bl
+    {planeCrnrs_u4[0],   planeCrnrs_u4[1],   peptex_obord_tl_x, peptex_obord_tl_y}, //  4 tl
+    {planeCrnrs_u4[2],   planeCrnrs_u4[1],   peptex_obord_tr_x, peptex_obord_tr_y}, //  5 tr
+    {planeCrnrs_u4[2],   planeCrnrs_u4[3],   peptex_obord_br_x, peptex_obord_br_y}, //  6 br
+    {planeCrnrs_u4[0],   planeCrnrs_u4[3],   peptex_obord_bl_x, peptex_obord_bl_y}, //  7 bl
     // center marker
-    {-0.5, 0.5,              peptex_cntr_tl_x,  peptex_cntr_tl_y},  //  8 tl
-    { 0.5, 0.5,              peptex_cntr_tr_x,  peptex_cntr_tr_y},  //  9 tr
-    { 0.5,-0.5,              peptex_cntr_br_x,  peptex_cntr_br_y},  // 10 br
-    {-0.5,-0.5,              peptex_cntr_bl_x,  peptex_cntr_bl_y}   // 11 bl
+    {-0.5,  0.5, peptex_cntr_tl_x,  peptex_cntr_tl_y}, //  8 tl
+    { 0.5,  0.5, peptex_cntr_tr_x,  peptex_cntr_tr_y}, //  9 tr
+    { 0.5, -0.5, peptex_cntr_br_x,  peptex_cntr_br_y}, // 10 br
+    {-0.5, -0.5, peptex_cntr_bl_x,  peptex_cntr_bl_y}  // 11 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
   uint16_t indices[] = {
@@ -101,9 +106,8 @@ int main(int argc, char *argv[]) {
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
   
-  float unitScale[2];
-  fr(i,2) {unitScale[i] = gridUnit/(videoSize[i]/2);}
-  
+  float unitScale_2[2];
+  fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_p2[i]/2);}
   
   
   GLuint vao;
@@ -155,7 +159,7 @@ int main(int argc, char *argv[]) {
   );_glec
   
   GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");
-  glUniform2f(unif_unitScale, unitScale[0], unitScale[1]);
+  glUniform2f(unif_unitScale, unitScale_2[0], unitScale_2[1]);
   GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   glUniform2f(unif_scroll, 0, 0);
   
@@ -199,11 +203,15 @@ int main(int argc, char *argv[]) {
   clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
   
   // normalized, -1 to 1 for x and y, 0 to 1 for z
-  float newCurs[3]   = {0};
-  float oldCurs[3]   = {0};
-  float newScrollPos[2] = {0};
-  float oldScrollPos[2] = {0};
-  float inertia[2]   = {0};
+  float newCurs_ndc3[3]      = {0};
+  float oldCurs_ndc3[3]      = {0};
+  float newScrollPos_ndc2[2] = {0};
+  float oldScrollPos_ndc2[2] = {0};
+  float scrollVel_ndc2[2]    = {0};
+  
+  // in units, relative to plane center
+  float screenCrnrs_u4[4] = {0}; // xyxy, tl br
+  //float cursPos_u3[3]   = {0}; // xyz
   
   int curFrame = 0;
   bool running = true;
@@ -221,43 +229,72 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    fr(i,3) {oldCurs[i] = newCurs[i];}
+    fr(i,3) {oldCurs_ndc3[i] = newCurs_ndc3[i];}
     bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          newCurs[0] = event.motion.x;
-          newCurs[1] = event.motion.y;
-          fr(i,2) {newCurs[i] = (newCurs[i]-videoSize[i]/2)/(videoSize[i]/2);}
-          newCurs[1] *= -1;
+          newCurs_ndc3[0] = event.motion.x;
+          newCurs_ndc3[1] = event.motion.y;
+          fr(i,2) {
+            newCurs_ndc3[i] = 
+              (newCurs_ndc3[i] - videoSize_p2[i]/2) / (videoSize_p2[i]/2)
+            ;
+          }
+          newCurs_ndc3[1] *= -1;
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs[2] = 1.0; break;
+            case SDL_BUTTON_LEFT: newCurs_ndc3[2] = 1.0; break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs[2] = 0.0; break;
+            case SDL_BUTTON_LEFT: newCurs_ndc3[2] = 0.0; break;
           }
           break;
       }
     }
     
-    fr(i,2) {oldScrollPos[i] = newScrollPos[i];}
-    if (newCurs[2]) {
-      if (oldCurs[2]) {fr(i,2) {newScrollPos[i] += newCurs[i] - oldCurs[i];}}
-      else {fr(i,2) {inertia[i] = 0;}}
+    fr(i,2) {oldScrollPos_ndc2[i] = newScrollPos_ndc2[i];}
+    if (newCurs_ndc3[2]) {
+      if (oldCurs_ndc3[2]) {
+        fr(i,2) {newScrollPos_ndc2[i] += newCurs_ndc3[i] - oldCurs_ndc3[i];}
+      }
+      else {fr(i,2) {scrollVel_ndc2[i] = 0;}}
     }
     else {
-      if (oldCurs[2]) {fr(i,2) {inertia[i] = newCurs[i] - oldCurs[i];}}
-      fr(i,2) {newScrollPos[i] += inertia[i];}
+      if (oldCurs_ndc3[2]) {
+        fr(i,2) {scrollVel_ndc2[i] = newCurs_ndc3[i] - oldCurs_ndc3[i];}
+      }
+      fr(i,2) {newScrollPos_ndc2[i] += scrollVel_ndc2[i];}
     }
     
-    if (!allEq(newScrollPos, oldScrollPos, 2)) {
-      glUniform2f(unif_scroll, newScrollPos[0], newScrollPos[1]);_glec
+    
+    if (!allEq(newScrollPos_ndc2, oldScrollPos_ndc2, 2)) {
+      screenCrnrs_u4[0] = -1/unitScale_2[0] - newScrollPos_ndc2[0]/unitScale_2[0];
+      screenCrnrs_u4[1] =  1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
+      screenCrnrs_u4[2] =  1/unitScale_2[0] - newScrollPos_ndc2[0]/unitScale_2[0];
+      screenCrnrs_u4[3] = -1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
+      if (screenCrnrs_u4[0] < planeCrnrs_u4[0]) {
+        newScrollPos_ndc2[0] = (planeCrnrs_u4[0] + halfVideoSize_u2[0])*-unitScale_2[0];
+        scrollVel_ndc2[0] = 0;
+      }
+      else if (screenCrnrs_u4[2] > planeCrnrs_u4[2]) {
+        newScrollPos_ndc2[0] = (planeCrnrs_u4[2] - halfVideoSize_u2[0])*-unitScale_2[0];
+        scrollVel_ndc2[0] = 0;
+      }
+      if (screenCrnrs_u4[1] > planeCrnrs_u4[1]) {
+        newScrollPos_ndc2[1] = (planeCrnrs_u4[1] - halfVideoSize_u2[1])*-unitScale_2[1];
+        scrollVel_ndc2[1] = 0;
+      }
+      else if (screenCrnrs_u4[3] < planeCrnrs_u4[3]) {
+        newScrollPos_ndc2[1] = (planeCrnrs_u4[3] + halfVideoSize_u2[1])*-unitScale_2[1];
+        scrollVel_ndc2[1] = 0;
+      }
+      glUniform2f(unif_scroll, newScrollPos_ndc2[0], newScrollPos_ndc2[1]);_glec
       redraw = true;
     }
     
@@ -269,8 +306,7 @@ int main(int argc, char *argv[]) {
     #if LOG_TIMING
 		clock_gettime(CLOCK_MONOTONIC, &ts_now);
     getTimeDelta(&ts_newFrameStart, &ts_now, &ts_compTime);
-    printf(
-      "ts_compTime: %3ld s, %9ld ns\n",
+    printf("ts_compTime: %3ld s, %9ld ns\n",
       ts_compTime.tv_sec, ts_compTime.tv_nsec
     );
     #endif
