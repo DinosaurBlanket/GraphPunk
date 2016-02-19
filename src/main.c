@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
 		"GraphPunk",               //const char* title,
 		SDL_WINDOWPOS_UNDEFINED,   //int         x,
 		SDL_WINDOWPOS_UNDEFINED,   //int         y,
-		videoSize_p2[0],              //int         w,
-		videoSize_p2[1],              //int         h,
+		videoSize_p2[0],           //int         w,
+		videoSize_p2[1],           //int         h,
 		SDL_WINDOW_OPENGL          //Uint32      flags
 	);_sdlec
 	GLcontext = SDL_GL_CreateContext(window);_sdlec

@@ -1,0 +1,28 @@
+{
+  <insert_a_suppression_name_here>
+  Memcheck:Param
+  writev(vector[...])
+  obj:/usr/lib/libc-2.22.so
+  obj:/usr/lib/libxcb.so.1.1.0
+  obj:/usr/lib/libxcb.so.1.1.0
+  fun:xcb_writev
+  fun:_XSend
+  fun:_XReply
+  fun:XInternAtom
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+}
+{
+  <insert_a_suppression_name_here>
+  Memcheck:Leak
+  match-leak-kinds: definite
+  fun:malloc
+  fun:glXGetFBConfigs
+  fun:glXChooseFBConfig
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  obj:/usr/lib/libSDL2-2.0.so.0.4.0
+  fun:main
+}
