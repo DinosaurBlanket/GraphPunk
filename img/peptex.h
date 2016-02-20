@@ -1,3 +1,4 @@
+#define peptex_path "img/peptex.bmp"
 #define peptex_size_x  64.0f
 #define peptex_size_y  64.0f
 

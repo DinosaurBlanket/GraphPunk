@@ -38,11 +38,13 @@ typedef struct {float x; float y; float s; float t;} uiVert;
 
 
 typedef struct {
-  float  corners_u4[4];
-  float  pos_udc2[2];
-  int    depth;
-  GLuint vbo;
-  GLuint ebo;
+  float    corners_u4[4];
+  float    pos_udc2[2];
+  int      depth;
+  GLuint   vbo;
+  uint32_t vertexCount;
+  GLuint   ebo;
+  uint32_t indexCount;
   //vinode *vinodes;
 } plane; // will eventually also be used for picker pages, not just modules
 
@@ -52,34 +54,53 @@ typedef struct {
   // *specialNodes;
 } module;
 
-void correctPlaneCorners(plane *pln, float videoSize_px2[2]) {
-  pln.p[0] = floor(-videoSize_px2[0]/gridUnit); // tl
-  pln.p[0] = ceil(  videoSize_px2[1]/gridUnit); // tr
-  pln.p[0] = ceil(  videoSize_px2[0]/gridUnit); // bl
-  pln.p[0] = floor(-videoSize_px2[1]/gridUnit); // br
-  
+#define planePadding_u 12
+
+void correctPlaneCorners(plane *pln, float halfVideoSize_u2[2]) {
+  pln->corners_u4[0] = floor(-halfVideoSize_u2[0] - planePadding_u); // tl
+  pln->corners_u4[1] = ceil ( halfVideoSize_u2[1] + planePadding_u); // tr
+  pln->corners_u4[2] = ceil ( halfVideoSize_u2[0] + planePadding_u); // bl
+  pln->corners_u4[3] = floor(-halfVideoSize_u2[1] - planePadding_u); // br
 }
 void correctPlaneVertices(plane *pln) {
-  if (!pln.vbo) glGenBuffers(1, &pln.vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
+  if (!pln->vbo) glGenBuffers(1, &pln->vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
   uiVert vertices[] = {
     // inside border
-    {planeCrnrs_u4[0]+1, planeCrnrs_u4[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
-    {planeCrnrs_u4[2]-1, planeCrnrs_u4[1]-1, peptex_ibord_tr_x, peptex_ibord_tr_y}, //  1 tr
-    {planeCrnrs_u4[2]-1, planeCrnrs_u4[3]+1, peptex_ibord_br_x, peptex_ibord_br_y}, //  2 br
-    {planeCrnrs_u4[0]+1, planeCrnrs_u4[3]+1, peptex_ibord_bl_x, peptex_ibord_bl_y}, //  3 bl
+    {    // 0 tl
+      pln->corners_u4[0]+1, pln->corners_u4[1]-1, 
+      peptex_ibord_tl_x, peptex_ibord_tl_y
+    }, { // 1 tr
+      pln->corners_u4[2]-1, pln->corners_u4[1]-1, 
+      peptex_ibord_tr_x, peptex_ibord_tr_y
+    }, { // 2 br
+      pln->corners_u4[2]-1, pln->corners_u4[3]+1, 
+      peptex_ibord_br_x, peptex_ibord_br_y
+    }, { // 3 bl
+      pln->corners_u4[0]+1, pln->corners_u4[3]+1, 
+      peptex_ibord_bl_x, peptex_ibord_bl_y
+    },
     // outside border
-    {planeCrnrs_u4[0],   planeCrnrs_u4[1],   peptex_obord_tl_x, peptex_obord_tl_y}, //  4 tl
-    {planeCrnrs_u4[2],   planeCrnrs_u4[1],   peptex_obord_tr_x, peptex_obord_tr_y}, //  5 tr
-    {planeCrnrs_u4[2],   planeCrnrs_u4[3],   peptex_obord_br_x, peptex_obord_br_y}, //  6 br
-    {planeCrnrs_u4[0],   planeCrnrs_u4[3],   peptex_obord_bl_x, peptex_obord_bl_y}, //  7 bl
+    {    // 4 tl
+      pln->corners_u4[0], pln->corners_u4[1], 
+      peptex_obord_tl_x, peptex_obord_tl_y
+    }, { // 5 tr
+      pln->corners_u4[2], pln->corners_u4[1], 
+      peptex_obord_tr_x, peptex_obord_tr_y
+    }, { // 6 br
+      pln->corners_u4[2], pln->corners_u4[3], 
+      peptex_obord_br_x, peptex_obord_br_y
+    }, { // 7 bl
+      pln->corners_u4[0], pln->corners_u4[3], 
+      peptex_obord_bl_x, peptex_obord_bl_y
+    }, 
     // center marker
-    {-0.5,  0.5, peptex_cntr_tl_x,  peptex_cntr_tl_y}, //  8 tl
-    { 0.5,  0.5, peptex_cntr_tr_x,  peptex_cntr_tr_y}, //  9 tr
-    { 0.5, -0.5, peptex_cntr_br_x,  peptex_cntr_br_y}, // 10 br
-    {-0.5, -0.5, peptex_cntr_bl_x,  peptex_cntr_bl_y}  // 11 bl
+    {-0.5,  0.5, peptex_cntr_tl_x, peptex_cntr_tl_y}, //  8 tl
+    { 0.5,  0.5, peptex_cntr_tr_x, peptex_cntr_tr_y}, //  9 tr
+    { 0.5, -0.5, peptex_cntr_br_x, peptex_cntr_br_y}, // 10 br
+    {-0.5, -0.5, peptex_cntr_bl_x, peptex_cntr_bl_y}  // 11 bl
   };
-  //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
+  pln->vertexCount = sizeof(vertices)/sizeof(uiVert);
   glBufferData(
     GL_ARRAY_BUFFER,
     sizeof(vertices),
@@ -87,8 +108,8 @@ void correctPlaneVertices(plane *pln) {
     GL_STATIC_DRAW
   );_glec
   
-  if (!pln.ebo) glGenBuffers(1, &pln.ebo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
+  if (!pln->ebo) glGenBuffers(1, &pln->ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
   uint16_t indices[] = {
     // inside border
     0,1,3, 1,2,3,
@@ -97,7 +118,7 @@ void correctPlaneVertices(plane *pln) {
     // center marker
     8,9,11, 9,10,11
   };
-  uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
+  pln->indexCount = sizeof(indices)/sizeof(uint16_t);
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER, 
     sizeof(indices), 
@@ -105,6 +126,10 @@ void correctPlaneVertices(plane *pln) {
     GL_STATIC_DRAW
   );_glec
 }
+//void bindPlaneGL(plane *pln) {
+//  glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
+//  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
+//}
 
 
 
@@ -145,14 +170,6 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
-  module rootMod;
-  correctPlaneCorners(&rootMod.p, videoSize_px2);
-  correctPlaneVertices(&rootMod.p);
-  
-  
-  
-  
-  
   
   GLuint vao_UI;
   glGenVertexArrays(1, &vao_UI);_glec
@@ -161,9 +178,9 @@ int main(int argc, char *argv[]) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
-  
-  
-  
+  module rootMod = {0};
+  correctPlaneCorners(&rootMod.p, halfVideoSize_u2);
+  correctPlaneVertices(&rootMod.p);
   
   GLuint shaderProgram = createShaderProgram(
     "src/vert.glsl", 
@@ -173,8 +190,7 @@ int main(int argc, char *argv[]) {
   if (!shaderProgram) return __LINE__;
   glUseProgram(shaderProgram);_glec
   
-  
-  GLint attr_pos      = glGetAttribLocation(shaderProgram, "pos"  );_glec
+  GLint attr_pos      = glGetAttribLocation(shaderProgram, "pos");_glec
   GLint attr_texCoord = glGetAttribLocation(shaderProgram, "texCoord");_glec
   glEnableVertexAttribArray(attr_pos  );_glec
   glEnableVertexAttribArray(attr_texCoord);_glec
@@ -194,7 +210,7 @@ int main(int argc, char *argv[]) {
   glGenTextures(1, &tex);_glec
   glBindTexture(GL_TEXTURE_2D, tex);_glec
   {
-    SDL_Surface *srfc_ = SDL_LoadBMP("img/peptex.bmp");_sdlec
+    SDL_Surface *srfc_ = SDL_LoadBMP(peptex_path);_sdlec
     SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
       srfc_, SDL_PIXELFORMAT_ABGR8888, 0
     );_sdlec
@@ -222,12 +238,7 @@ int main(int argc, char *argv[]) {
   
   
   
-  timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
-  timespec ts_frameDelta = {0,0};
-  #if LOG_TIMING
-  timespec ts_compTime = {0,0}, ts_now = {0,0};
-  #endif
-  clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+  module *curMod = &rootMod;
   
   // normalized, -1 to 1 for x and y, 0 to 1 for z
   float newCurs_ndc3[3]      = {0};
@@ -240,10 +251,18 @@ int main(int argc, char *argv[]) {
   float screenCrnrs_u4[4] = {0}; // xyxy, tl br
   //float cursPos_u3[3]   = {0}; // xyz
   
+  
+  timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
+  timespec ts_frameDelta = {0,0};
+  #if LOG_TIMING
+  timespec ts_compTime = {0,0}, ts_now = {0,0};
+  #endif
+  clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+  
   int curFrame = 0;
   bool running = true;
   
-  glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
+  glDrawElements(GL_TRIANGLES, curMod->p.indexCount, GL_UNSIGNED_SHORT, 0);_glec
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -305,20 +324,28 @@ int main(int argc, char *argv[]) {
       screenCrnrs_u4[1] =  1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
       screenCrnrs_u4[2] =  1/unitScale_2[0] - newScrollPos_ndc2[0]/unitScale_2[0];
       screenCrnrs_u4[3] = -1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
-      if (screenCrnrs_u4[0] < planeCrnrs_u4[0]) {
-        newScrollPos_ndc2[0] = (planeCrnrs_u4[0] + halfVideoSize_u2[0])*-unitScale_2[0];
+      if (screenCrnrs_u4[0] < curMod->p.corners_u4[0]) {
+        newScrollPos_ndc2[0] = 
+          (curMod->p.corners_u4[0] + halfVideoSize_u2[0])*-unitScale_2[0]
+        ;
         scrollVel_ndc2[0] = 0;
       }
-      else if (screenCrnrs_u4[2] > planeCrnrs_u4[2]) {
-        newScrollPos_ndc2[0] = (planeCrnrs_u4[2] - halfVideoSize_u2[0])*-unitScale_2[0];
+      else if (screenCrnrs_u4[2] > curMod->p.corners_u4[2]) {
+        newScrollPos_ndc2[0] = 
+          (curMod->p.corners_u4[2] - halfVideoSize_u2[0])*-unitScale_2[0]
+        ;
         scrollVel_ndc2[0] = 0;
       }
-      if (screenCrnrs_u4[1] > planeCrnrs_u4[1]) {
-        newScrollPos_ndc2[1] = (planeCrnrs_u4[1] - halfVideoSize_u2[1])*-unitScale_2[1];
+      if (screenCrnrs_u4[1] > curMod->p.corners_u4[1]) {
+        newScrollPos_ndc2[1] = 
+          (curMod->p.corners_u4[1] - halfVideoSize_u2[1])*-unitScale_2[1]
+        ;
         scrollVel_ndc2[1] = 0;
       }
-      else if (screenCrnrs_u4[3] < planeCrnrs_u4[3]) {
-        newScrollPos_ndc2[1] = (planeCrnrs_u4[3] + halfVideoSize_u2[1])*-unitScale_2[1];
+      else if (screenCrnrs_u4[3] < curMod->p.corners_u4[3]) {
+        newScrollPos_ndc2[1] = 
+          (curMod->p.corners_u4[3] + halfVideoSize_u2[1])*-unitScale_2[1]
+        ;
         scrollVel_ndc2[1] = 0;
       }
       glUniform2f(unif_scroll, newScrollPos_ndc2[0], newScrollPos_ndc2[1]);_glec
@@ -326,7 +353,9 @@ int main(int argc, char *argv[]) {
     }
     
     if (redraw) {
-      glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);_glec
+      glDrawElements(
+        GL_TRIANGLES, curMod->p.indexCount, GL_UNSIGNED_SHORT, 0
+      );_glec
       redraw = false;
     }
     
