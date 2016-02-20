@@ -37,47 +37,31 @@ void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
 typedef struct {float x; float y; float s; float t;} uiVert;
 
 
-int main(int argc, char *argv[]) {
-  float videoSize_p2[2] = {800, 600}; // pixels
-	float gridUnit = 32;                // pixels
-  float halfVideoSize_u2[2];          // units
-  fr(i,2) {halfVideoSize_u2[i] = (videoSize_p2[i]/gridUnit)/2.0f;}
-	
-	SDL_Window    *window    = NULL;
-	SDL_GLContext  GLcontext = NULL;
-	SDL_Init(SDL_INIT_VIDEO);_sdlec
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-	window = SDL_CreateWindow(
-		"GraphPunk",               //const char* title,
-		SDL_WINDOWPOS_UNDEFINED,   //int         x,
-		SDL_WINDOWPOS_UNDEFINED,   //int         y,
-		videoSize_p2[0],           //int         w,
-		videoSize_p2[1],           //int         h,
-		SDL_WINDOW_OPENGL          //Uint32      flags
-	);_sdlec
-	GLcontext = SDL_GL_CreateContext(window);_sdlec
-  SDL_GL_SetSwapInterval(1);_sdlec
+typedef struct {
+  float  corners_u4[4];
+  float  pos_udc2[2];
+  int    depth;
+  GLuint vbo;
+  GLuint ebo;
+  //vinode *vinodes;
+} plane; // will eventually also be used for picker pages, not just modules
+
+typedef struct {
+  plane p;
+  //exnode *exnodes;
+  // *specialNodes;
+} module;
+
+void correctPlaneCorners(plane *pln, float videoSize_px2[2]) {
+  pln.p[0] = floor(-videoSize_px2[0]/gridUnit); // tl
+  pln.p[0] = ceil(  videoSize_px2[1]/gridUnit); // tr
+  pln.p[0] = ceil(  videoSize_px2[0]/gridUnit); // bl
+  pln.p[0] = floor(-videoSize_px2[1]/gridUnit); // br
   
-  glewExperimental = GL_TRUE;
-  {
-  	GLenum r = glewInit();
-    if (r != GLEW_OK) {
-      printf("GLEW error: %s\n", glewGetErrorString(r));
-      return 1;
-    }
-    // There's an OpenGL error 1280 here for some reason, just flush it...
-    while (glGetError() != GL_NO_ERROR) {};
-  }
-  //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
-	
-  
-  float planeCrnrs_u4[4] = {
-    floor(-videoSize_p2[0]/gridUnit), ceil(videoSize_p2[1]/gridUnit), // tl
-    ceil(videoSize_p2[0]/gridUnit), floor(-videoSize_p2[1]/gridUnit)  // br
-  }; // in units
-  
+}
+void correctPlaneVertices(plane *pln) {
+  if (!pln.vbo) glGenBuffers(1, &pln.vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
   uiVert vertices[] = {
     // inside border
     {planeCrnrs_u4[0]+1, planeCrnrs_u4[1]-1, peptex_ibord_tl_x, peptex_ibord_tl_y}, //  0 tl
@@ -96,6 +80,15 @@ int main(int argc, char *argv[]) {
     {-0.5, -0.5, peptex_cntr_bl_x,  peptex_cntr_bl_y}  // 11 bl
   };
   //uint32_t vertexCount = sizeof(vertices)/sizeof(uiVert);
+  glBufferData(
+    GL_ARRAY_BUFFER,
+    sizeof(vertices),
+    vertices,
+    GL_STATIC_DRAW
+  );_glec
+  
+  if (!pln.ebo) glGenBuffers(1, &pln.ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
   uint16_t indices[] = {
     // inside border
     0,1,3, 1,2,3,
@@ -105,36 +98,70 @@ int main(int argc, char *argv[]) {
     8,9,11, 9,10,11
   };
   uint32_t indexCount = sizeof(indices)/sizeof(uint16_t);
-  
-  float unitScale_2[2];
-  fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_p2[i]/2);}
-  
-  
-  GLuint vao;
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glGenVertexArrays(1, &vao);_glec
-  glBindVertexArray(vao);_glec
-  
-  GLuint vbo;
-  GLuint ebo;
-  glGenBuffers(1, &vbo);_glec
-  glGenBuffers(1, &ebo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER,         vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
-  glBufferData(
-    GL_ARRAY_BUFFER,
-    sizeof(vertices),
-    vertices,
-    GL_STATIC_DRAW
-  );_glec
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER, 
     sizeof(indices), 
     indices, 
     GL_STATIC_DRAW
   );_glec
+}
+
+
+
+int main(int argc, char *argv[]) {
+  float videoSize_px2[2] = {800, 600}; // pixels
+	float gridUnit = 32;                // pixels
+	float unitScale_2[2];
+  fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_px2[i]/2.0f);}
+  float halfVideoSize_u2[2];          // units
+  fr(i,2) {halfVideoSize_u2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
+  
+	SDL_Window    *window    = NULL;
+	SDL_GLContext  GLcontext = NULL;
+	SDL_Init(SDL_INIT_VIDEO);_sdlec
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	window = SDL_CreateWindow(
+		"GraphPunk",               //const char* title,
+		SDL_WINDOWPOS_UNDEFINED,   //int         x,
+		SDL_WINDOWPOS_UNDEFINED,   //int         y,
+		videoSize_px2[0],           //int         w,
+		videoSize_px2[1],           //int         h,
+		SDL_WINDOW_OPENGL          //Uint32      flags
+	);_sdlec
+	GLcontext = SDL_GL_CreateContext(window);_sdlec
+  SDL_GL_SetSwapInterval(1);_sdlec
+  
+  glewExperimental = GL_TRUE;
+  {
+  	GLenum r = glewInit();
+    if (r != GLEW_OK) {
+      printf("GLEW error: %s\n", glewGetErrorString(r));
+      return 1;
+    }
+    // There's an OpenGL error 1280 here for some reason, just flush it...
+    while (glGetError() != GL_NO_ERROR) {};
+  }
+  //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
+	
+  module rootMod;
+  correctPlaneCorners(&rootMod.p, videoSize_px2);
+  correctPlaneVertices(&rootMod.p);
+  
+  
+  
+  
+  
+  
+  GLuint vao_UI;
+  glGenVertexArrays(1, &vao_UI);_glec
+  glBindVertexArray(vao_UI);_glec
+  
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  
+  
   
   
   
@@ -240,7 +267,7 @@ int main(int argc, char *argv[]) {
           newCurs_ndc3[1] = event.motion.y;
           fr(i,2) {
             newCurs_ndc3[i] = 
-              (newCurs_ndc3[i] - videoSize_p2[i]/2) / (videoSize_p2[i]/2)
+              (newCurs_ndc3[i] - videoSize_px2[i]/2) / (videoSize_px2[i]/2)
             ;
           }
           newCurs_ndc3[1] *= -1;
