@@ -10,7 +10,7 @@
 
 #include "optionsAndErrors.h"
 #include "oglTools.h"
-#include "../img/peptex.h"
+#include "../img/uitex.h"
 
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
@@ -69,36 +69,36 @@ void correctPlaneVertices(plane *pln) {
     // inside border
     {    // 0 tl
       pln->corners_u4[0]+1, pln->corners_u4[1]-1, 
-      peptex_ibord_tl_x, peptex_ibord_tl_y
+      uitex_ibord_tl_x, uitex_ibord_tl_y
     }, { // 1 tr
       pln->corners_u4[2]-1, pln->corners_u4[1]-1, 
-      peptex_ibord_tr_x, peptex_ibord_tr_y
+      uitex_ibord_tr_x, uitex_ibord_tr_y
     }, { // 2 br
       pln->corners_u4[2]-1, pln->corners_u4[3]+1, 
-      peptex_ibord_br_x, peptex_ibord_br_y
+      uitex_ibord_br_x, uitex_ibord_br_y
     }, { // 3 bl
       pln->corners_u4[0]+1, pln->corners_u4[3]+1, 
-      peptex_ibord_bl_x, peptex_ibord_bl_y
+      uitex_ibord_bl_x, uitex_ibord_bl_y
     },
     // outside border
     {    // 4 tl
       pln->corners_u4[0], pln->corners_u4[1], 
-      peptex_obord_tl_x, peptex_obord_tl_y
+      uitex_obord_tl_x, uitex_obord_tl_y
     }, { // 5 tr
       pln->corners_u4[2], pln->corners_u4[1], 
-      peptex_obord_tr_x, peptex_obord_tr_y
+      uitex_obord_tr_x, uitex_obord_tr_y
     }, { // 6 br
       pln->corners_u4[2], pln->corners_u4[3], 
-      peptex_obord_br_x, peptex_obord_br_y
+      uitex_obord_br_x, uitex_obord_br_y
     }, { // 7 bl
       pln->corners_u4[0], pln->corners_u4[3], 
-      peptex_obord_bl_x, peptex_obord_bl_y
+      uitex_obord_bl_x, uitex_obord_bl_y
     }, 
     // center marker
-    {-0.5,  0.5, peptex_cntr_tl_x, peptex_cntr_tl_y}, //  8 tl
-    { 0.5,  0.5, peptex_cntr_tr_x, peptex_cntr_tr_y}, //  9 tr
-    { 0.5, -0.5, peptex_cntr_br_x, peptex_cntr_br_y}, // 10 br
-    {-0.5, -0.5, peptex_cntr_bl_x, peptex_cntr_bl_y}  // 11 bl
+    {-0.5,  0.5, uitex_cntr_tl_x, uitex_cntr_tl_y}, //  8 tl
+    { 0.5,  0.5, uitex_cntr_tr_x, uitex_cntr_tr_y}, //  9 tr
+    { 0.5, -0.5, uitex_cntr_br_x, uitex_cntr_br_y}, // 10 br
+    {-0.5, -0.5, uitex_cntr_bl_x, uitex_cntr_bl_y}  // 11 bl
   };
   pln->vertexCount = sizeof(vertices)/sizeof(uiVert);
   glBufferData(
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
   glGenTextures(1, &tex);_glec
   glBindTexture(GL_TEXTURE_2D, tex);_glec
   {
-    SDL_Surface *srfc_ = SDL_LoadBMP(peptex_path);_sdlec
+    SDL_Surface *srfc_ = SDL_LoadBMP(uitex_path);_sdlec
     SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
       srfc_, SDL_PIXELFORMAT_ABGR8888, 0
     );_sdlec
@@ -220,8 +220,8 @@ int main(int argc, char *argv[]) {
       GL_TEXTURE_2D,       // GLenum        target
       0,                   // GLint         level
       GL_RGBA,             // GLint         internalformat
-      peptex_size_x,       // GLsizei       width
-      peptex_size_y,       // GLsizei       height
+      uitex_size_x,       // GLsizei       width
+      uitex_size_y,       // GLsizei       height
       0,                   // GLint         border
       GL_RGBA,             // GLenum        format
       GL_UNSIGNED_BYTE,    // GLenum        type
