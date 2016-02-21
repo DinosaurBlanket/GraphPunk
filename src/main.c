@@ -38,8 +38,8 @@ typedef struct {float x; float y; float s; float t;} uiVert;
 
 
 typedef struct {
-  float    corners_u4[4];
-  float    pos_udc2[2];
+  float    corners_gu4[4];
+  float    pos_gudc2[2];
   int      depth;
   GLuint   vbo;
   uint32_t vertexCount;
@@ -54,13 +54,13 @@ typedef struct {
   // *specialNodes;
 } module;
 
-#define planePadding_u 12
+#define planePadding_gu 12
 
-void correctPlaneCorners(plane *pln, float halfVideoSize_u2[2]) {
-  pln->corners_u4[0] = floor(-halfVideoSize_u2[0] - planePadding_u); // tl
-  pln->corners_u4[1] = ceil ( halfVideoSize_u2[1] + planePadding_u); // tr
-  pln->corners_u4[2] = ceil ( halfVideoSize_u2[0] + planePadding_u); // bl
-  pln->corners_u4[3] = floor(-halfVideoSize_u2[1] - planePadding_u); // br
+void correctPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
+  pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // tl
+  pln->corners_gu4[1] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // tr
+  pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // bl
+  pln->corners_gu4[3] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // br
 }
 void correctPlaneVertices(plane *pln) {
   if (!pln->vbo) glGenBuffers(1, &pln->vbo);_glec
@@ -68,30 +68,30 @@ void correctPlaneVertices(plane *pln) {
   uiVert vertices[] = {
     // inside border
     {    // 0 tl
-      pln->corners_u4[0]+1, pln->corners_u4[1]-1, 
+      pln->corners_gu4[0]+1, pln->corners_gu4[1]-1, 
       uitex_ibord_tl_x, uitex_ibord_tl_y
     }, { // 1 tr
-      pln->corners_u4[2]-1, pln->corners_u4[1]-1, 
+      pln->corners_gu4[2]-1, pln->corners_gu4[1]-1, 
       uitex_ibord_tr_x, uitex_ibord_tr_y
     }, { // 2 br
-      pln->corners_u4[2]-1, pln->corners_u4[3]+1, 
+      pln->corners_gu4[2]-1, pln->corners_gu4[3]+1, 
       uitex_ibord_br_x, uitex_ibord_br_y
     }, { // 3 bl
-      pln->corners_u4[0]+1, pln->corners_u4[3]+1, 
+      pln->corners_gu4[0]+1, pln->corners_gu4[3]+1, 
       uitex_ibord_bl_x, uitex_ibord_bl_y
     },
     // outside border
     {    // 4 tl
-      pln->corners_u4[0], pln->corners_u4[1], 
+      pln->corners_gu4[0], pln->corners_gu4[1], 
       uitex_obord_tl_x, uitex_obord_tl_y
     }, { // 5 tr
-      pln->corners_u4[2], pln->corners_u4[1], 
+      pln->corners_gu4[2], pln->corners_gu4[1], 
       uitex_obord_tr_x, uitex_obord_tr_y
     }, { // 6 br
-      pln->corners_u4[2], pln->corners_u4[3], 
+      pln->corners_gu4[2], pln->corners_gu4[3], 
       uitex_obord_br_x, uitex_obord_br_y
     }, { // 7 bl
-      pln->corners_u4[0], pln->corners_u4[3], 
+      pln->corners_gu4[0], pln->corners_gu4[3], 
       uitex_obord_bl_x, uitex_obord_bl_y
     }, 
     // center marker
@@ -126,20 +126,16 @@ void correctPlaneVertices(plane *pln) {
     GL_STATIC_DRAW
   );_glec
 }
-//void bindPlaneGL(plane *pln) {
-//  glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
-//  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
-//}
 
 
 
 int main(int argc, char *argv[]) {
   float videoSize_px2[2] = {800, 600}; // pixels
-	float gridUnit = 32;                // pixels
+	float gridUnit = 32;                 // pixels
 	float unitScale_2[2];
   fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_px2[i]/2.0f);}
-  float halfVideoSize_u2[2];          // units
-  fr(i,2) {halfVideoSize_u2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
+  float halfVideoSize_gu2[2];          // grid units
+  fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
   
 	SDL_Window    *window    = NULL;
 	SDL_GLContext  GLcontext = NULL;
@@ -179,7 +175,7 @@ int main(int argc, char *argv[]) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
   module rootMod = {0};
-  correctPlaneCorners(&rootMod.p, halfVideoSize_u2);
+  correctPlaneCorners(&rootMod.p, halfVideoSize_gu2);
   correctPlaneVertices(&rootMod.p);
   
   GLuint shaderProgram = createShaderProgram(
@@ -220,8 +216,8 @@ int main(int argc, char *argv[]) {
       GL_TEXTURE_2D,       // GLenum        target
       0,                   // GLint         level
       GL_RGBA,             // GLint         internalformat
-      uitex_size_x,       // GLsizei       width
-      uitex_size_y,       // GLsizei       height
+      uitex_size_x,        // GLsizei       width
+      uitex_size_y,        // GLsizei       height
       0,                   // GLint         border
       GL_RGBA,             // GLenum        format
       GL_UNSIGNED_BYTE,    // GLenum        type
@@ -238,18 +234,14 @@ int main(int argc, char *argv[]) {
   
   
   
-  module *curMod = &rootMod;
+  plane *curPlane = &rootMod.p;
   
-  // normalized, -1 to 1 for x and y, 0 to 1 for z
-  float newCurs_ndc3[3]      = {0};
-  float oldCurs_ndc3[3]      = {0};
-  float newScrollPos_ndc2[2] = {0};
-  float oldScrollPos_ndc2[2] = {0};
-  float scrollVel_ndc2[2]    = {0};
-  
-  // in units, relative to plane center
-  float screenCrnrs_u4[4] = {0}; // xyxy, tl br
-  //float cursPos_u3[3]   = {0}; // xyz
+  float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
+  float oldCursAbs_gu3[3]   = {0};
+  float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
+  float oldScrollPos_gu2[2] = {0};
+  float scrollVel_gu2[2]    = {0};
+  float screenCrnrs_gu4[4]  = {0}; // xyxy, ltrb, relative to plane center
   
   
   timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
@@ -262,7 +254,7 @@ int main(int argc, char *argv[]) {
   int curFrame = 0;
   bool running = true;
   
-  glDrawElements(GL_TRIANGLES, curMod->p.indexCount, GL_UNSIGNED_SHORT, 0);_glec
+  glDrawElements(GL_TRIANGLES, curPlane->indexCount, GL_UNSIGNED_SHORT, 0);_glec
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -275,86 +267,72 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    fr(i,3) {oldCurs_ndc3[i] = newCurs_ndc3[i];}
+    fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
     bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          newCurs_ndc3[0] = event.motion.x;
-          newCurs_ndc3[1] = event.motion.y;
-          fr(i,2) {
-            newCurs_ndc3[i] = 
-              (newCurs_ndc3[i] - videoSize_px2[i]/2) / (videoSize_px2[i]/2)
-            ;
-          }
-          newCurs_ndc3[1] *= -1;
+          newCursAbs_gu3[0] =  event.motion.x/gridUnit - halfVideoSize_gu2[0];
+          newCursAbs_gu3[1] = -event.motion.y/gridUnit + halfVideoSize_gu2[1];
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs_ndc3[2] = 1.0; break;
+            case SDL_BUTTON_LEFT: newCursAbs_gu3[2] = 1.0f; break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCurs_ndc3[2] = 0.0; break;
+            case SDL_BUTTON_LEFT: newCursAbs_gu3[2] = 0; break;
           }
           break;
       }
     }
     
-    fr(i,2) {oldScrollPos_ndc2[i] = newScrollPos_ndc2[i];}
-    if (newCurs_ndc3[2]) {
-      if (oldCurs_ndc3[2]) {
-        fr(i,2) {newScrollPos_ndc2[i] += newCurs_ndc3[i] - oldCurs_ndc3[i];}
+    fr(i,2) {oldScrollPos_gu2[i] = newScrollPos_gu2[i];}
+    if (newCursAbs_gu3[2]) {
+      if (oldCursAbs_gu3[2]) {
+        fr(i,2) {newScrollPos_gu2[i] += newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
       }
-      else {fr(i,2) {scrollVel_ndc2[i] = 0;}}
+      else {fr(i,2) {scrollVel_gu2[i] = 0;}}
     }
     else {
-      if (oldCurs_ndc3[2]) {
-        fr(i,2) {scrollVel_ndc2[i] = newCurs_ndc3[i] - oldCurs_ndc3[i];}
+      if (oldCursAbs_gu3[2]) {
+        fr(i,2) {scrollVel_gu2[i] = newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
       }
-      fr(i,2) {newScrollPos_ndc2[i] += scrollVel_ndc2[i];}
+      fr(i,2) {newScrollPos_gu2[i] += scrollVel_gu2[i];}
     }
     
     
-    if (!allEq(newScrollPos_ndc2, oldScrollPos_ndc2, 2)) {
-      screenCrnrs_u4[0] = -1/unitScale_2[0] - newScrollPos_ndc2[0]/unitScale_2[0];
-      screenCrnrs_u4[1] =  1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
-      screenCrnrs_u4[2] =  1/unitScale_2[0] - newScrollPos_ndc2[0]/unitScale_2[0];
-      screenCrnrs_u4[3] = -1/unitScale_2[1] - newScrollPos_ndc2[1]/unitScale_2[1];
-      if (screenCrnrs_u4[0] < curMod->p.corners_u4[0]) {
-        newScrollPos_ndc2[0] = 
-          (curMod->p.corners_u4[0] + halfVideoSize_u2[0])*-unitScale_2[0]
-        ;
-        scrollVel_ndc2[0] = 0;
+    if (!allEq(newScrollPos_gu2, oldScrollPos_gu2, 2)) {
+      screenCrnrs_gu4[0] = newScrollPos_gu2[0]-halfVideoSize_gu2[0];
+      screenCrnrs_gu4[1] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
+      screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
+      screenCrnrs_gu4[3] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
+      if (screenCrnrs_gu4[0] < curPlane->corners_gu4[0]) {
+        newScrollPos_gu2[0] = curPlane->corners_gu4[0] + halfVideoSize_gu2[0];
+        scrollVel_gu2[0] = 0;
       }
-      else if (screenCrnrs_u4[2] > curMod->p.corners_u4[2]) {
-        newScrollPos_ndc2[0] = 
-          (curMod->p.corners_u4[2] - halfVideoSize_u2[0])*-unitScale_2[0]
-        ;
-        scrollVel_ndc2[0] = 0;
+      else if (screenCrnrs_gu4[2] > curPlane->corners_gu4[2]) {
+        newScrollPos_gu2[0] = curPlane->corners_gu4[2] - halfVideoSize_gu2[0];
+        scrollVel_gu2[0] = 0;
       }
-      if (screenCrnrs_u4[1] > curMod->p.corners_u4[1]) {
-        newScrollPos_ndc2[1] = 
-          (curMod->p.corners_u4[1] - halfVideoSize_u2[1])*-unitScale_2[1]
-        ;
-        scrollVel_ndc2[1] = 0;
+      if (screenCrnrs_gu4[1] > curPlane->corners_gu4[1]) {
+        newScrollPos_gu2[1] = curPlane->corners_gu4[1] - halfVideoSize_gu2[1];
+        scrollVel_gu2[1] = 0;
       }
-      else if (screenCrnrs_u4[3] < curMod->p.corners_u4[3]) {
-        newScrollPos_ndc2[1] = 
-          (curMod->p.corners_u4[3] + halfVideoSize_u2[1])*-unitScale_2[1]
-        ;
-        scrollVel_ndc2[1] = 0;
+      else if (screenCrnrs_gu4[3] < curPlane->corners_gu4[3]) {
+        newScrollPos_gu2[1] = curPlane->corners_gu4[3] + halfVideoSize_gu2[1];
+        scrollVel_gu2[1] = 0;
       }
-      glUniform2f(unif_scroll, newScrollPos_ndc2[0], newScrollPos_ndc2[1]);_glec
+      glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
       redraw = true;
     }
     
     if (redraw) {
       glDrawElements(
-        GL_TRIANGLES, curMod->p.indexCount, GL_UNSIGNED_SHORT, 0
+        GL_TRIANGLES, curPlane->indexCount, GL_UNSIGNED_SHORT, 0
       );_glec
       redraw = false;
     }

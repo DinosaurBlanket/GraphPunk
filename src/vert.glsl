@@ -9,5 +9,5 @@ out vec2 texCoordThru;
 
 void main() {
   texCoordThru = texCoord;
-  gl_Position = vec4(pos*unitScale + scroll, 0.0, 1.0);
+  gl_Position = vec4((pos+scroll)*unitScale, 0.0, 1.0);
 }
