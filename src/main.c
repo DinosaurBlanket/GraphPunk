@@ -191,30 +191,8 @@ int main(int argc, char *argv[]) {
   GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   glUniform2f(unif_scroll, 0, 0);
   
-  GLuint tex;
-  glGenTextures(1, &tex);_glec
-  glBindTexture(GL_TEXTURE_2D, tex);_glec
-  {
-    SDL_Surface *srfc_ = SDL_LoadBMP(uitex_path);_sdlec
-    SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
-      srfc_, SDL_PIXELFORMAT_ABGR8888, 0
-    );_sdlec
-    SDL_FreeSurface(srfc_);_sdlec
-    
-    glTexImage2D(
-      GL_TEXTURE_2D,       // GLenum        target
-      0,                   // GLint         level
-      GL_RGBA,             // GLint         internalformat
-      uitex_size_x,        // GLsizei       width
-      uitex_size_y,        // GLsizei       height
-      0,                   // GLint         border
-      GL_RGBA,             // GLenum        format
-      GL_UNSIGNED_BYTE,    // GLenum        type
-      srfc->pixels         // const GLvoid *data
-    );_glec
-    
-    SDL_FreeSurface(srfc);_sdlec
-  }
+  GLuint uiTex;
+  texFromBmp(uiTex, uitex_path);
   glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);_glec
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);_glec

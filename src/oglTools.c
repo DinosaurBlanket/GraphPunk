@@ -74,3 +74,27 @@ GLuint createShaderProgram(
   free(textBuf);
   return shaderProgram;
 }
+
+#include <SDL2/SDL_surface.h>
+
+void texFromBmp(GLuint tex, const char *bmpPath) {
+  glGenTextures(1, &tex);_glec
+  glBindTexture(GL_TEXTURE_2D, tex);_glec
+  SDL_Surface *srfcRaw = SDL_LoadBMP(bmpPath);_sdlec
+  SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
+    srfcRaw, SDL_PIXELFORMAT_ABGR8888, 0
+  );_sdlec
+  SDL_FreeSurface(srfcRaw);_sdlec
+  glTexImage2D(
+    GL_TEXTURE_2D,        // GLenum        target
+    0,                    // GLint         level
+    GL_RGBA,              // GLint         internalformat
+    srfc->w,              // GLsizei       width
+    srfc->h,              // GLsizei       height
+    0,                    // GLint         border
+    GL_RGBA,              // GLenum        format
+    GL_UNSIGNED_BYTE,     // GLenum        type
+    srfc->pixels          // const GLvoid *data
+  );_glec
+  SDL_FreeSurface(srfc);_sdlec
+}
