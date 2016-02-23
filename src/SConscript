@@ -1,4 +1,4 @@
 flags = "-Wall -g -std=gnu11"
 env = Environment(CC = "gcc", CCFLAGS = flags)
-src = ["main.c", "oglTools.c", "fileTools.c"]
+src = ["main.c", "oglTools.c", "fileTools.c", "timestamp.c"]
 env.Program("GraphPunk", src, LIBS = ["GL", "GLEW", "SDL2", "m"])

@@ -11,6 +11,7 @@
 #include "optionsAndErrors.h"
 #include "oglTools.h"
 #include "../img/uitex.h"
+#include "timestamp.h"
 
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
@@ -20,18 +21,6 @@ bool allEq(const float *l, const float *r, int c) {
   return true;
 }
 
-
-#include <time.h>
-typedef struct timespec timespec;
-// This function assumes latter >= former
-void getTimeDelta (timespec *former, timespec *latter, timespec *delta) {
-  delta->tv_sec = latter->tv_sec - former->tv_sec;
-  if (former->tv_nsec > latter->tv_nsec) { // then we have to carry
-    delta->tv_sec--;
-    delta->tv_nsec = (1e9 - former->tv_nsec) + latter->tv_nsec;
-  }
-  else delta->tv_nsec = latter->tv_nsec - former->tv_nsec;
-}
 
 
 typedef struct {float x; float y; float s; float t;} uiVert;
@@ -244,12 +233,12 @@ int main(int argc, char *argv[]) {
   float screenCrnrs_gu4[4]  = {0}; // xyxy, ltrb, relative to plane center
   
   
-  timespec ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
-  timespec ts_frameDelta = {0,0};
+  timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
+  timestamp ts_frameDelta = {0,0};
   #if LOG_TIMING
-  timespec ts_compTime = {0,0}, ts_now = {0,0};
+  timestamp ts_compTime = {0,0}, ts_now = {0,0};
   #endif
-  clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+  getTimestamp(&ts_newFrameStart);
   
   int curFrame = 0;
   bool running = true;
@@ -258,7 +247,7 @@ int main(int argc, char *argv[]) {
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
-    clock_gettime(CLOCK_MONOTONIC, &ts_newFrameStart);
+    getTimestamp(&ts_newFrameStart);
     getTimeDelta(&ts_oldFrameStart, &ts_newFrameStart, &ts_frameDelta);
     #if LOG_TIMING
     printf(
@@ -338,7 +327,7 @@ int main(int argc, char *argv[]) {
     }
     
     #if LOG_TIMING
-		clock_gettime(CLOCK_MONOTONIC, &ts_now);
+		getTimestamp(&ts_now);
     getTimeDelta(&ts_newFrameStart, &ts_now, &ts_compTime);
     printf("ts_compTime: %3ld s, %9ld ns\n",
       ts_compTime.tv_sec, ts_compTime.tv_nsec
