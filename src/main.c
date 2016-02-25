@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
   GLint unif_scroll = glGetUniformLocation(shaderProgram, "scroll");
   glUniform2f(unif_scroll, 0, 0);
   
-  GLuint uiTex;
+  GLuint uiTex = 0;
   texFromBmp(uiTex, uitex_path);
   glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);_glec

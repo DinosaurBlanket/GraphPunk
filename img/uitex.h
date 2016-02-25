@@ -1,6 +1,6 @@
 #define uitex_path "img/uitex.bmp"
-#define uitex_size_x  64.0f
-#define uitex_size_y  64.0f
+#define uitex_size_x  512.0f
+#define uitex_size_y  512.0f
 
 #define uitex_ibord_tl_x   1.0f/uitex_size_x
 #define uitex_ibord_tl_y  34.0f/uitex_size_y
