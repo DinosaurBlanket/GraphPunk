@@ -60,6 +60,6 @@
 #define uitex_gc_forward_bl_x    320.0f/uitex_size_x
 #define uitex_gc_forward_bl_y      0.0f
 #define uitex_gc_save_bl_x       352.0f/uitex_size_x
-#define uitex_gc_save_bl_x         0.0f
-#define uitex_gc_writing_bl_y    352.0f/uitex_size_x
+#define uitex_gc_save_bl_y         0.0f
+#define uitex_gc_writing_bl_x    352.0f/uitex_size_x
 #define uitex_gc_writing_bl_y     32.0f/uitex_size_x

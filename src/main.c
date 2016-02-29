@@ -116,6 +116,25 @@ void correctPlaneVertices(plane *pln) {
   );_glec
 }
 
+void drawPlane(plane *pln) {
+  glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
+  glDrawElements(GL_TRIANGLES, pln->indexCount, GL_UNSIGNED_SHORT, 0);_glec
+}
+
+
+
+// global controls toggle states
+struct gc {
+  bool paused;
+  bool auMuted;
+  bool auSoloed;
+  bool moveBranch;
+  bool locked;
+  bool Saving;
+};
+
+
 
 
 int main(int argc, char *argv[]) {
@@ -155,6 +174,10 @@ int main(int argc, char *argv[]) {
   }
   //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
 	
+  module rootMod = {0};
+  correctPlaneCorners(&rootMod.p, halfVideoSize_gu2);
+  correctPlaneVertices(&rootMod.p);
+  
   
   GLuint vao_UI;
   glGenVertexArrays(1, &vao_UI);_glec
@@ -163,9 +186,8 @@ int main(int argc, char *argv[]) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
-  module rootMod = {0};
-  correctPlaneCorners(&rootMod.p, halfVideoSize_gu2);
-  correctPlaneVertices(&rootMod.p);
+  
+  
   
   GLuint shaderProgram = createShaderProgram(
     "src/vert.glsl", 
@@ -221,7 +243,7 @@ int main(int argc, char *argv[]) {
   int curFrame = 0;
   bool running = true;
   
-  glDrawElements(GL_TRIANGLES, curPlane->indexCount, GL_UNSIGNED_SHORT, 0);_glec
+  drawPlane(curPlane);
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -235,7 +257,6 @@ int main(int argc, char *argv[]) {
     #endif
     
     fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
-    bool redraw = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -294,15 +315,9 @@ int main(int argc, char *argv[]) {
         scrollVel_gu2[1] = 0;
       }
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
-      redraw = true;
+      drawPlane(curPlane);
     }
     
-    if (redraw) {
-      glDrawElements(
-        GL_TRIANGLES, curPlane->indexCount, GL_UNSIGNED_SHORT, 0
-      );_glec
-      redraw = false;
-    }
     
     #if LOG_TIMING
 		getTimestamp(&ts_now);

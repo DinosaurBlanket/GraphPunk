@@ -1,4 +1,5 @@
 bin/*
 log/*
+img/*.xcf
 GraphPunk
 .sconsign.dblite
