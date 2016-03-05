@@ -1,7 +1,12 @@
 #define uitex_path "img/uitex.bmp"
-#define uitex_size_x  512.0f
-#define uitex_size_y  512.0f
-#define uitex_guSize   32.0f
+
+// in pixels
+#define uitex_size_x     512.0f
+#define uitex_size_y     512.0f
+#define uitex_guSize_px   32.0f
+
+// in normalized texture coordinates
+#define uitex_guSize_nt    0.0625f
 
 #define uitex_ibord_tl_x   1.0f/uitex_size_x
 #define uitex_ibord_tl_y  34.0f/uitex_size_y
@@ -20,12 +25,6 @@
 #define uitex_obord_bl_x   0.0f
 #define uitex_obord_bl_y  32.0f/uitex_size_y
 
-#define uitex_cntr_tl_x    0.0f
-#define uitex_cntr_tl_y   32.0f/uitex_size_y
-#define uitex_cntr_tr_x   32.0f/uitex_size_x
-#define uitex_cntr_tr_y   32.0f/uitex_size_y
-#define uitex_cntr_br_x   32.0f/uitex_size_x
-#define uitex_cntr_br_y    0.0f
 #define uitex_cntr_bl_x    0.0f
 #define uitex_cntr_bl_y    0.0f
 

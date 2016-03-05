@@ -8,7 +8,7 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
-#include "optionsAndErrors.h"
+#include "error.h"
 #include "oglTools.h"
 #include "../img/uitex.h"
 #include "timestamp.h"
@@ -24,18 +24,29 @@ bool allEq(const float *l, const float *r, int c) {
 
 
 typedef struct {float x; float y; float s; float t;} uiVert;
-
+typedef struct {
+  GLuint    vbo;
+  uint32_t  vCount; // number of vertex elements
+  uint32_t  vCap;   // maximum number of elements the buffer can hold
+  GLuint    ibo;
+  uint32_t  iCount;
+  uint32_t  iCap;
+} vertGroup;
+void drawVertGroup(vertGroup *vg) {
+  glBindBuffer(GL_ARRAY_BUFFER,         vg->vbo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vg->ibo);_glec
+  glDrawElements(GL_TRIANGLES, vg->iCount, GL_UNSIGNED_INT, 0);_glec
+}
 
 typedef struct {
-  float    corners_gu4[4];
-  float    pos_gudc2[2];
-  int      depth;
-  GLuint   vbo;
-  uint32_t vertexCount;
-  GLuint   ebo;
-  uint32_t indexCount;
+  float       corners_gu4[4];
+  float       pos_gudc2[2];
+  vertGroup   vg;
+  //uiVert     *lineVertData
+  //uiVert     *nodeVertData
+  //int       depth; // in module tree
   //vinode *vinodes;
-} plane; // will eventually also be used for picker pages, not just modules
+} plane;
 
 typedef struct {
   plane p;
@@ -43,18 +54,42 @@ typedef struct {
   // *specialNodes;
 } module;
 
-#define planePadding_gu 12
+void putUnitSquareVerts(
+  uiVert     *dest,
+  const float bl_xy_gu[2], // grid units
+  const float bl_st_nt[2], // normalized texture coordinates
+  float       texOffset_nt
+) {
+  // tl
+  dest[0].x = bl_xy_gu[0];
+  dest[0].y = bl_xy_gu[1] + 1.0;
+  dest[0].s = bl_st_nt[0];
+  dest[0].t = bl_st_nt[1] + texOffset_nt;
+  // tr
+  dest[1].x = bl_xy_gu[0] + 1.0;
+  dest[1].y = bl_xy_gu[1] + 1.0;
+  dest[1].s = bl_st_nt[0] + texOffset_nt;
+  dest[1].t = bl_st_nt[1] + texOffset_nt;
+  // br
+  dest[2].x = bl_xy_gu[0] + 1.0;
+  dest[2].y = bl_xy_gu[1];
+  dest[2].s = bl_st_nt[0] + texOffset_nt;
+  dest[2].t = bl_st_nt[1];
+  // bl
+  dest[3].x = bl_xy_gu[0];
+  dest[3].y = bl_xy_gu[1];
+  dest[3].s = bl_st_nt[0];
+  dest[3].t = bl_st_nt[1];
+}
 
-void correctPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
+const float planePadding_gu = 12;
+
+void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
   pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // tl
   pln->corners_gu4[1] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // tr
   pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // bl
   pln->corners_gu4[3] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // br
-}
-void correctPlaneVertices(plane *pln) {
-  if (!pln->vbo) glGenBuffers(1, &pln->vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
-  uiVert vertices[] = {
+  uiVert backVerts[8] = {
     // inside border
     {    // 0 tl
       pln->corners_gu4[0]+1, pln->corners_gu4[1]-1, 
@@ -82,24 +117,51 @@ void correctPlaneVertices(plane *pln) {
     }, { // 7 bl
       pln->corners_gu4[0], pln->corners_gu4[3], 
       uitex_obord_bl_x, uitex_obord_bl_y
-    }, 
-    // center marker
-    {-0.5,  0.5, uitex_cntr_tl_x, uitex_cntr_tl_y}, //  8 tl
-    { 0.5,  0.5, uitex_cntr_tr_x, uitex_cntr_tr_y}, //  9 tr
-    { 0.5, -0.5, uitex_cntr_br_x, uitex_cntr_br_y}, // 10 br
-    {-0.5, -0.5, uitex_cntr_bl_x, uitex_cntr_bl_y}  // 11 bl
+    }
   };
-  pln->vertexCount = sizeof(vertices)/sizeof(uiVert);
+  glBindBuffer(GL_ARRAY_BUFFER, pln->vg.vbo);_glec
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
+}
+
+void initPlane(plane *pln, float halfVideoSize_gu2[2]) {
+  pln->vg.vCap = 128;
+  pln->vg.iCap = pln->vg.vCap/2;
+  glGenBuffers(1, &pln->vg.vbo);_glec
+  glGenBuffers(1, &pln->vg.ibo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER,         pln->vg.vbo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->vg.ibo);_glec
   glBufferData(
-    GL_ARRAY_BUFFER,
-    sizeof(vertices),
-    vertices,
+    GL_ARRAY_BUFFER,               // GLenum        target
+    pln->vg.vCap*sizeof(uiVert),   // GLsizeiptr    size
+    0,                             // const GLvoid *data
+    GL_STATIC_DRAW                 // GLenum        usage​
+  );_glec
+  glBufferData(
+    GL_ELEMENT_ARRAY_BUFFER,
+    pln->vg.iCap*sizeof(uint32_t),
+    0,
     GL_STATIC_DRAW
   );_glec
   
-  if (!pln->ebo) glGenBuffers(1, &pln->ebo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
-  uint16_t indices[] = {
+  pln->vg.vCount = 12;
+  resetPlaneCorners(pln, halfVideoSize_gu2);
+  uiVert centerVerts[4];
+  const float centerVerts_bl_xy_gu[2] = {-0.5, -0.5};
+  const float centerVerts_bl_st_nt[2] = {uitex_cntr_bl_x, uitex_cntr_bl_y};
+  putUnitSquareVerts(
+    centerVerts,
+    centerVerts_bl_xy_gu,
+    centerVerts_bl_st_nt,
+    uitex_guSize_nt
+  );
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    8*sizeof(uiVert),
+    sizeof(centerVerts),
+    centerVerts
+  );_glec
+  
+  uint32_t backInd[] = {
     // inside border
     0,1,3, 1,2,3,
     // outside border
@@ -107,24 +169,13 @@ void correctPlaneVertices(plane *pln) {
     // center marker
     8,9,11, 9,10,11
   };
-  pln->indexCount = sizeof(indices)/sizeof(uint16_t);
-  glBufferData(
-    GL_ELEMENT_ARRAY_BUFFER, 
-    sizeof(indices), 
-    indices, 
-    GL_STATIC_DRAW
-  );_glec
-}
-
-void drawPlane(plane *pln) {
-  glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
-  glDrawElements(GL_TRIANGLES, pln->indexCount, GL_UNSIGNED_SHORT, 0);_glec
+  pln->vg.iCount = sizeof(backInd)/sizeof(uint32_t);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(backInd), backInd);_glec
 }
 
 
 
-// global controls toggle states
+// global control stuff
 struct gc {
   bool paused;
   bool auMuted;
@@ -132,7 +183,13 @@ struct gc {
   bool moveBranch;
   bool locked;
   bool Saving;
+  GLuint   vbo;
+  GLuint   ebo;
+  uint32_t vertexCount;
+  uint32_t indexCount;
 };
+
+
 
 
 
@@ -145,38 +202,42 @@ int main(int argc, char *argv[]) {
   float halfVideoSize_gu2[2];          // grid units
   fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
   
-	SDL_Window    *window    = NULL;
-	SDL_GLContext  GLcontext = NULL;
-	SDL_Init(SDL_INIT_VIDEO);_sdlec
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-	window = SDL_CreateWindow(
-		"GraphPunk",               //const char* title,
-		SDL_WINDOWPOS_UNDEFINED,   //int         x,
-		SDL_WINDOWPOS_UNDEFINED,   //int         y,
-		videoSize_px2[0],           //int         w,
-		videoSize_px2[1],           //int         h,
-		SDL_WINDOW_OPENGL          //Uint32      flags
-	);_sdlec
-	GLcontext = SDL_GL_CreateContext(window);_sdlec
-  SDL_GL_SetSwapInterval(1);_sdlec
+  
+	//initVideo(window, GlContext, videoSize_px2[0], videoSize_px2[1]);
+  SDL_Window   *window    = NULL;
+  SDL_GLContext GlContext = NULL;
+  SDL_Init(SDL_INIT_VIDEO);_sdlec
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+  window = SDL_CreateWindow(
+    "GraphPunk",               //const char* title,
+    SDL_WINDOWPOS_UNDEFINED,   //int         x,
+    SDL_WINDOWPOS_UNDEFINED,   //int         y,
+    videoSize_px2[0],          //int         w,
+    videoSize_px2[1],          //int         h,
+    SDL_WINDOW_OPENGL          //Uint32      flags
+  );_sdlec
+  GlContext = SDL_GL_CreateContext(window);_sdlec
+  SDL_GL_SetSwapInterval(ENABLE_VSYNC);_sdlec
   
   glewExperimental = GL_TRUE;
   {
-  	GLenum r = glewInit();
+    GLenum r = glewInit();
     if (r != GLEW_OK) {
       printf("GLEW error: %s\n", glewGetErrorString(r));
-      return 1;
+      exit(1);
     }
     // There's an OpenGL error 1280 here for some reason, just flush it...
     while (glGetError() != GL_NO_ERROR) {};
   }
-  //printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
-	
+  #if PRINT_GL_VERSION
+  printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
+  #endif
+  
   module rootMod = {0};
-  correctPlaneCorners(&rootMod.p, halfVideoSize_gu2);
-  correctPlaneVertices(&rootMod.p);
+  plane *curPlane = &rootMod.p;
+  initPlane(curPlane, halfVideoSize_gu2);
   
   
   GLuint vao_UI;
@@ -185,9 +246,6 @@ int main(int argc, char *argv[]) {
   
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  
-  
-  
   
   GLuint shaderProgram = createShaderProgram(
     "src/vert.glsl", 
@@ -222,8 +280,8 @@ int main(int argc, char *argv[]) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   
   
+  drawVertGroup(&curPlane->vg);
   
-  plane *curPlane = &rootMod.p;
   
   float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
   float oldCursAbs_gu3[3]   = {0};
@@ -243,7 +301,6 @@ int main(int argc, char *argv[]) {
   int curFrame = 0;
   bool running = true;
   
-  drawPlane(curPlane);
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -315,7 +372,7 @@ int main(int argc, char *argv[]) {
         scrollVel_gu2[1] = 0;
       }
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
-      drawPlane(curPlane);
+      drawVertGroup(&curPlane->vg);
     }
     
     
@@ -331,7 +388,7 @@ int main(int argc, char *argv[]) {
     curFrame++;
 	}
 	
-	SDL_GL_DeleteContext(GLcontext);_sdlec
+	SDL_GL_DeleteContext(GlContext);_sdlec
 	SDL_Quit();_sdlec
 	return 0;
 }

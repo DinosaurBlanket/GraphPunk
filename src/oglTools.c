@@ -4,7 +4,7 @@
 #include <GL/glew.h>
 
 #include "fileTools.h"
-#include "optionsAndErrors.h"
+#include "error.h"
 
 GLuint createShaderProgram(
   const char *vertPath, 
