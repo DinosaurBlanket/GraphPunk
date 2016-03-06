@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
 
 #define  GLEW_STATIC
 #include <GL/glew.h>
@@ -12,185 +11,7 @@
 #include "oglTools.h"
 #include "../img/uitex.h"
 #include "timestamp.h"
-
-
-#define fr(i, bound) for (int i = 0; i < (bound); i++)
-
-bool allEq(const float *l, const float *r, int c) {
-  fr(i,c) {if (l[i] != r[i]) return false;}
-  return true;
-}
-
-
-
-typedef struct {float x; float y; float s; float t;} uiVert;
-typedef struct {
-  GLuint    vbo;
-  uint32_t  vCount; // number of vertex elements
-  uint32_t  vCap;   // maximum number of elements the buffer can hold
-  GLuint    ibo;
-  uint32_t  iCount;
-  uint32_t  iCap;
-} vertGroup;
-void drawVertGroup(vertGroup *vg) {
-  glBindBuffer(GL_ARRAY_BUFFER,         vg->vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vg->ibo);_glec
-  glDrawElements(GL_TRIANGLES, vg->iCount, GL_UNSIGNED_INT, 0);_glec
-}
-
-typedef struct {
-  float       corners_gu4[4];
-  float       pos_gudc2[2];
-  vertGroup   vg;
-  //uiVert     *lineVertData
-  //uiVert     *nodeVertData
-  //int       depth; // in module tree
-  //vinode *vinodes;
-} plane;
-
-typedef struct {
-  plane p;
-  //exnode *exnodes;
-  // *specialNodes;
-} module;
-
-void putUnitSquareVerts(
-  uiVert     *dest,
-  const float bl_xy_gu[2], // grid units
-  const float bl_st_nt[2], // normalized texture coordinates
-  float       texOffset_nt
-) {
-  // tl
-  dest[0].x = bl_xy_gu[0];
-  dest[0].y = bl_xy_gu[1] + 1.0;
-  dest[0].s = bl_st_nt[0];
-  dest[0].t = bl_st_nt[1] + texOffset_nt;
-  // tr
-  dest[1].x = bl_xy_gu[0] + 1.0;
-  dest[1].y = bl_xy_gu[1] + 1.0;
-  dest[1].s = bl_st_nt[0] + texOffset_nt;
-  dest[1].t = bl_st_nt[1] + texOffset_nt;
-  // br
-  dest[2].x = bl_xy_gu[0] + 1.0;
-  dest[2].y = bl_xy_gu[1];
-  dest[2].s = bl_st_nt[0] + texOffset_nt;
-  dest[2].t = bl_st_nt[1];
-  // bl
-  dest[3].x = bl_xy_gu[0];
-  dest[3].y = bl_xy_gu[1];
-  dest[3].s = bl_st_nt[0];
-  dest[3].t = bl_st_nt[1];
-}
-
-const float planePadding_gu = 12;
-
-void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
-  pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // tl
-  pln->corners_gu4[1] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // tr
-  pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // bl
-  pln->corners_gu4[3] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // br
-  uiVert backVerts[8] = {
-    // inside border
-    {    // 0 tl
-      pln->corners_gu4[0]+1, pln->corners_gu4[1]-1, 
-      uitex_ibord_tl_x, uitex_ibord_tl_y
-    }, { // 1 tr
-      pln->corners_gu4[2]-1, pln->corners_gu4[1]-1, 
-      uitex_ibord_tr_x, uitex_ibord_tr_y
-    }, { // 2 br
-      pln->corners_gu4[2]-1, pln->corners_gu4[3]+1, 
-      uitex_ibord_br_x, uitex_ibord_br_y
-    }, { // 3 bl
-      pln->corners_gu4[0]+1, pln->corners_gu4[3]+1, 
-      uitex_ibord_bl_x, uitex_ibord_bl_y
-    },
-    // outside border
-    {    // 4 tl
-      pln->corners_gu4[0], pln->corners_gu4[1], 
-      uitex_obord_tl_x, uitex_obord_tl_y
-    }, { // 5 tr
-      pln->corners_gu4[2], pln->corners_gu4[1], 
-      uitex_obord_tr_x, uitex_obord_tr_y
-    }, { // 6 br
-      pln->corners_gu4[2], pln->corners_gu4[3], 
-      uitex_obord_br_x, uitex_obord_br_y
-    }, { // 7 bl
-      pln->corners_gu4[0], pln->corners_gu4[3], 
-      uitex_obord_bl_x, uitex_obord_bl_y
-    }
-  };
-  glBindBuffer(GL_ARRAY_BUFFER, pln->vg.vbo);_glec
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
-}
-
-void initPlane(plane *pln, float halfVideoSize_gu2[2]) {
-  pln->vg.vCap = 128;
-  pln->vg.iCap = pln->vg.vCap/2;
-  glGenBuffers(1, &pln->vg.vbo);_glec
-  glGenBuffers(1, &pln->vg.ibo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER,         pln->vg.vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->vg.ibo);_glec
-  glBufferData(
-    GL_ARRAY_BUFFER,               // GLenum        target
-    pln->vg.vCap*sizeof(uiVert),   // GLsizeiptr    size
-    0,                             // const GLvoid *data
-    GL_STATIC_DRAW                 // GLenum        usage​
-  );_glec
-  glBufferData(
-    GL_ELEMENT_ARRAY_BUFFER,
-    pln->vg.iCap*sizeof(uint32_t),
-    0,
-    GL_STATIC_DRAW
-  );_glec
-  
-  pln->vg.vCount = 12;
-  resetPlaneCorners(pln, halfVideoSize_gu2);
-  uiVert centerVerts[4];
-  const float centerVerts_bl_xy_gu[2] = {-0.5, -0.5};
-  const float centerVerts_bl_st_nt[2] = {uitex_cntr_bl_x, uitex_cntr_bl_y};
-  putUnitSquareVerts(
-    centerVerts,
-    centerVerts_bl_xy_gu,
-    centerVerts_bl_st_nt,
-    uitex_guSize_nt
-  );
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    8*sizeof(uiVert),
-    sizeof(centerVerts),
-    centerVerts
-  );_glec
-  
-  uint32_t backInd[] = {
-    // inside border
-    0,1,3, 1,2,3,
-    // outside border
-    4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3,
-    // center marker
-    8,9,11, 9,10,11
-  };
-  pln->vg.iCount = sizeof(backInd)/sizeof(uint32_t);
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(backInd), backInd);_glec
-}
-
-
-
-// global control stuff
-struct gc {
-  bool paused;
-  bool auMuted;
-  bool auSoloed;
-  bool moveBranch;
-  bool locked;
-  bool Saving;
-  GLuint   vbo;
-  GLuint   ebo;
-  uint32_t vertexCount;
-  uint32_t indexCount;
-};
-
-
-
+#include "misc.h"
 
 
 
@@ -203,7 +24,6 @@ int main(int argc, char *argv[]) {
   fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
   
   
-	//initVideo(window, GlContext, videoSize_px2[0], videoSize_px2[1]);
   SDL_Window   *window    = NULL;
   SDL_GLContext GlContext = NULL;
   SDL_Init(SDL_INIT_VIDEO);_sdlec
