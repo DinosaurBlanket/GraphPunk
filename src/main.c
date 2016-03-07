@@ -17,7 +17,7 @@
 
 int main(int argc, char *argv[]) {
   float videoSize_px2[2] = {800, 600}; // pixels
-	float gridUnit = 32;                 // pixels
+	float gridUnit = 16;                 // pixels
 	float unitScale_2[2];
   fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_px2[i]/2.0f);}
   float halfVideoSize_gu2[2];          // grid units
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
   float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
   float oldScrollPos_gu2[2] = {0};
   float scrollVel_gu2[2]    = {0};
-  float screenCrnrs_gu4[4]  = {0}; // xyxy, ltrb, relative to plane center
+  float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
   
   
   timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
@@ -172,9 +172,9 @@ int main(int argc, char *argv[]) {
     
     if (!allEq(newScrollPos_gu2, oldScrollPos_gu2, 2)) {
       screenCrnrs_gu4[0] = newScrollPos_gu2[0]-halfVideoSize_gu2[0];
-      screenCrnrs_gu4[1] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
+      screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
       screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
-      screenCrnrs_gu4[3] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
+      screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
       if (screenCrnrs_gu4[0] < curPlane->corners_gu4[0]) {
         newScrollPos_gu2[0] = curPlane->corners_gu4[0] + halfVideoSize_gu2[0];
         scrollVel_gu2[0] = 0;
@@ -183,12 +183,12 @@ int main(int argc, char *argv[]) {
         newScrollPos_gu2[0] = curPlane->corners_gu4[2] - halfVideoSize_gu2[0];
         scrollVel_gu2[0] = 0;
       }
-      if (screenCrnrs_gu4[1] > curPlane->corners_gu4[1]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[1] - halfVideoSize_gu2[1];
+      if (screenCrnrs_gu4[1] < curPlane->corners_gu4[1]) {
+        newScrollPos_gu2[1] = curPlane->corners_gu4[1] + halfVideoSize_gu2[1];
         scrollVel_gu2[1] = 0;
       }
-      else if (screenCrnrs_gu4[3] < curPlane->corners_gu4[3]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[3] + halfVideoSize_gu2[1];
+      else if (screenCrnrs_gu4[3] > curPlane->corners_gu4[3]) {
+        newScrollPos_gu2[1] = curPlane->corners_gu4[3] - halfVideoSize_gu2[1];
         scrollVel_gu2[1] = 0;
       }
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec

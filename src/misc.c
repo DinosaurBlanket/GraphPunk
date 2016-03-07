@@ -24,70 +24,69 @@ void drawVertGroup(vertGroup *vg) {
   glDrawElements(GL_TRIANGLES, vg->iCount, GL_UNSIGNED_INT, 0);_glec
 }
 
-void putUnitSquareVerts(
-  uiVert     *dest,
-  const float bl_xy_gu[2], // grid units
-  const float bl_st_nt[2], // normalized texture coordinates
-  float       texOffset_nt
+void mapTexRectToVerts(
+  uiVert     *destVerts,
+  const float destCorners_gu[4], // grid units
+  const float srcCorners_nt[4]   // normalized texture coordinates
 ) {
-  // tl
-  dest[0].x = bl_xy_gu[0];
-  dest[0].y = bl_xy_gu[1] + 1.0;
-  dest[0].s = bl_st_nt[0];
-  dest[0].t = bl_st_nt[1] + texOffset_nt;
-  // tr
-  dest[1].x = bl_xy_gu[0] + 1.0;
-  dest[1].y = bl_xy_gu[1] + 1.0;
-  dest[1].s = bl_st_nt[0] + texOffset_nt;
-  dest[1].t = bl_st_nt[1] + texOffset_nt;
-  // br
-  dest[2].x = bl_xy_gu[0] + 1.0;
-  dest[2].y = bl_xy_gu[1];
-  dest[2].s = bl_st_nt[0] + texOffset_nt;
-  dest[2].t = bl_st_nt[1];
   // bl
-  dest[3].x = bl_xy_gu[0];
-  dest[3].y = bl_xy_gu[1];
-  dest[3].s = bl_st_nt[0];
-  dest[3].t = bl_st_nt[1];
+  destVerts[0].x = destCorners_gu[0];
+  destVerts[0].y = destCorners_gu[1];
+  destVerts[0].s = srcCorners_nt[0];
+  destVerts[0].t = srcCorners_nt[1];
+  // tl
+  destVerts[1].x = destCorners_gu[0];
+  destVerts[1].y = destCorners_gu[3];
+  destVerts[1].s = srcCorners_nt[0];
+  destVerts[1].t = srcCorners_nt[3];
+  // tr
+  destVerts[2].x = destCorners_gu[2];
+  destVerts[2].y = destCorners_gu[3];
+  destVerts[2].s = srcCorners_nt[2];
+  destVerts[2].t = srcCorners_nt[3];
+  // br
+  destVerts[3].x = destCorners_gu[2];
+  destVerts[3].y = destCorners_gu[1];
+  destVerts[3].s = srcCorners_nt[2];
+  destVerts[3].t = srcCorners_nt[1];
 }
 
 const float planePadding_gu = 12;
 
 void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
-  pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // tl
-  pln->corners_gu4[1] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // tr
-  pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // bl
-  pln->corners_gu4[3] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // br
+  pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // bl
+  pln->corners_gu4[1] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // tl
+  pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // tr
+  pln->corners_gu4[3] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // br
   uiVert backVerts[8] = {
     // inside border
-    {    // 0 tl
-      pln->corners_gu4[0]+1, pln->corners_gu4[1]-1, 
-      uitex_ibord_tl_x, uitex_ibord_tl_y
-    }, { // 1 tr
-      pln->corners_gu4[2]-1, pln->corners_gu4[1]-1, 
-      uitex_ibord_tr_x, uitex_ibord_tr_y
-    }, { // 2 br
-      pln->corners_gu4[2]-1, pln->corners_gu4[3]+1, 
-      uitex_ibord_br_x, uitex_ibord_br_y
-    }, { // 3 bl
-      pln->corners_gu4[0]+1, pln->corners_gu4[3]+1, 
+    {    // 0 bl
+      pln->corners_gu4[0]+1, pln->corners_gu4[1]+1, 
       uitex_ibord_bl_x, uitex_ibord_bl_y
-    },
+    }, { // 1 tl
+      pln->corners_gu4[0]+1, pln->corners_gu4[3]-1, 
+      uitex_ibord_tl_x, uitex_ibord_tl_y
+    }, { // 2 tr
+      pln->corners_gu4[2]-1, pln->corners_gu4[3]-1, 
+      uitex_ibord_tr_x, uitex_ibord_tr_y
+    }, { // 3 br
+      pln->corners_gu4[2]-1, pln->corners_gu4[1]+1, 
+      uitex_ibord_br_x, uitex_ibord_br_y
+    }, 
     // outside border
-    {    // 4 tl
+    {    // 0 bl
       pln->corners_gu4[0], pln->corners_gu4[1], 
-      uitex_obord_tl_x, uitex_obord_tl_y
-    }, { // 5 tr
-      pln->corners_gu4[2], pln->corners_gu4[1], 
-      uitex_obord_tr_x, uitex_obord_tr_y
-    }, { // 6 br
-      pln->corners_gu4[2], pln->corners_gu4[3], 
-      uitex_obord_br_x, uitex_obord_br_y
-    }, { // 7 bl
-      pln->corners_gu4[0], pln->corners_gu4[3], 
       uitex_obord_bl_x, uitex_obord_bl_y
-    }
+    }, { // 1 tl
+      pln->corners_gu4[0], pln->corners_gu4[3], 
+      uitex_obord_tl_x, uitex_obord_tl_y
+    }, { // 2 tr
+      pln->corners_gu4[2], pln->corners_gu4[3], 
+      uitex_obord_tr_x, uitex_obord_tr_y
+    }, { // 3 br
+      pln->corners_gu4[2], pln->corners_gu4[1], 
+      uitex_obord_br_x, uitex_obord_br_y
+    }, 
   };
   glBindBuffer(GL_ARRAY_BUFFER, pln->vg.vbo);_glec
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
@@ -116,14 +115,11 @@ void initPlane(plane *pln, float halfVideoSize_gu2[2]) {
   pln->vg.vCount = 12;
   resetPlaneCorners(pln, halfVideoSize_gu2);
   uiVert centerVerts[4];
-  const float centerVerts_bl_xy_gu[2] = {-0.5, -0.5};
-  const float centerVerts_bl_st_nt[2] = {uitex_cntr_bl_x, uitex_cntr_bl_y};
-  putUnitSquareVerts(
-    centerVerts,
-    centerVerts_bl_xy_gu,
-    centerVerts_bl_st_nt,
-    uitex_guSize_nt
-  );
+  const float centerVertsCorners_gu[4] = {-1.0, -1.0, 1.0, 1.0};
+  const float centerTexCorners_nt[4] = {
+    uitex_cntr_bl_x, uitex_cntr_bl_y, uitex_cntr_tr_x, uitex_cntr_tr_y
+  };
+  mapTexRectToVerts(centerVerts, centerVertsCorners_gu, centerTexCorners_nt);
   glBufferSubData(
     GL_ARRAY_BUFFER,
     8*sizeof(uiVert),

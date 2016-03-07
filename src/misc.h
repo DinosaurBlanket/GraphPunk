@@ -15,7 +15,7 @@ void drawVertGroup(vertGroup *vg);
 
 
 typedef struct {
-  float       corners_gu4[4];
+  float       corners_gu4[4]; // xyxy, bottom left and top right
   float       pos_gudc2[2];
   vertGroup   vg;
   //uiVert     *lineVertData
@@ -41,8 +41,5 @@ struct gc {
   bool moveBranch;
   bool locked;
   bool Saving;
-  GLuint   vbo;
-  GLuint   ebo;
-  uint32_t vertexCount;
-  uint32_t indexCount;
+  vertGroup vg;
 };
