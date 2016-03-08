@@ -17,7 +17,7 @@
 
 int main(int argc, char *argv[]) {
   float videoSize_px2[2] = {800, 600}; // pixels
-	float gridUnit = 16;                 // pixels
+	float gridUnit = uitex_guSize_px;
 	float unitScale_2[2];
   fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_px2[i]/2.0f);}
   float halfVideoSize_gu2[2];          // grid units
@@ -175,26 +175,19 @@ int main(int argc, char *argv[]) {
       screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
       screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
       screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
-      if (screenCrnrs_gu4[0] < curPlane->corners_gu4[0]) {
-        newScrollPos_gu2[0] = curPlane->corners_gu4[0] + halfVideoSize_gu2[0];
-        scrollVel_gu2[0] = 0;
-      }
-      else if (screenCrnrs_gu4[2] > curPlane->corners_gu4[2]) {
-        newScrollPos_gu2[0] = curPlane->corners_gu4[2] - halfVideoSize_gu2[0];
-        scrollVel_gu2[0] = 0;
-      }
-      if (screenCrnrs_gu4[1] < curPlane->corners_gu4[1]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[1] + halfVideoSize_gu2[1];
-        scrollVel_gu2[1] = 0;
-      }
-      else if (screenCrnrs_gu4[3] > curPlane->corners_gu4[3]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[3] - halfVideoSize_gu2[1];
-        scrollVel_gu2[1] = 0;
+      fr(i,2) {
+        if (screenCrnrs_gu4[i] < curPlane->corners_gu4[i]) {
+          newScrollPos_gu2[i] = curPlane->corners_gu4[i]+halfVideoSize_gu2[i];
+          scrollVel_gu2[i] = 0;
+        }
+        else if (screenCrnrs_gu4[i+2] > curPlane->corners_gu4[i+2]) {
+          newScrollPos_gu2[i] = curPlane->corners_gu4[i+2]-halfVideoSize_gu2[i];
+          scrollVel_gu2[i] = 0;
+        }
       }
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
       drawVertGroup(&curPlane->vg);
     }
-    
     
     #if LOG_TIMING
 		getTimestamp(&ts_now);

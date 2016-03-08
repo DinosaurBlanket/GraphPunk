@@ -92,25 +92,29 @@ void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
 }
 
-void initPlane(plane *pln, float halfVideoSize_gu2[2]) {
-  pln->vg.vCap = 128;
-  pln->vg.iCap = pln->vg.vCap/2;
-  glGenBuffers(1, &pln->vg.vbo);_glec
-  glGenBuffers(1, &pln->vg.ibo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER,         pln->vg.vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->vg.ibo);_glec
+void initVertGroup(vertGroup *vg, uint32_t vCap, uint32_t iCap) {
+  vg->vCap = vCap;
+  vg->iCap = iCap;
+  glGenBuffers(1, &vg->vbo);_glec
+  glGenBuffers(1, &vg->ibo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER,         vg->vbo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vg->ibo);_glec
   glBufferData(
-    GL_ARRAY_BUFFER,               // GLenum        target
-    pln->vg.vCap*sizeof(uiVert),   // GLsizeiptr    size
-    0,                             // const GLvoid *data
-    GL_STATIC_DRAW                 // GLenum        usage​
+    GL_ARRAY_BUFFER,           // GLenum        target
+    vg->vCap*sizeof(uiVert),   // GLsizeiptr    size
+    0,                         // const GLvoid *data
+    GL_STATIC_DRAW             // GLenum        usage​
   );_glec
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER,
-    pln->vg.iCap*sizeof(uint32_t),
+    vg->iCap*sizeof(uint32_t),
     0,
     GL_STATIC_DRAW
   );_glec
+}
+
+void initPlane(plane *pln, float halfVideoSize_gu2[2]) {
+  initVertGroup(&pln->vg, 128, 192);
   
   pln->vg.vCount = 12;
   resetPlaneCorners(pln, halfVideoSize_gu2);

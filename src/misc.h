@@ -34,7 +34,7 @@ void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]);
 void initPlane(plane *pln, float halfVideoSize_gu2[2]);
 
 // global control stuff
-struct gc {
+typedef struct {
   bool paused;
   bool auMuted;
   bool auSoloed;
@@ -42,4 +42,4 @@ struct gc {
   bool locked;
   bool Saving;
   vertGroup vg;
-};
+} GlblCtrls;
