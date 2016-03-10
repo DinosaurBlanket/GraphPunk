@@ -77,9 +77,7 @@ GLuint createShaderProgram(
 
 #include <SDL2/SDL_surface.h>
 
-void texFromBmp(GLuint tex, const char *bmpPath) {
-  glGenTextures(1, &tex);_glec
-  glBindTexture(GL_TEXTURE_2D, tex);_glec
+void texFromBmp(const char *bmpPath) {
   SDL_Surface *srfcRaw = SDL_LoadBMP(bmpPath);_sdlec
   SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
     srfcRaw, SDL_PIXELFORMAT_ABGR8888, 0

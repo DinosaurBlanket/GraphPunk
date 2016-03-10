@@ -18,6 +18,3 @@
 #else
   #define _glec
 #endif
-
-#include "misc.h"
-void printVerts(const uiVert *verts, int count);

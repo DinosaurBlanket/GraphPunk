@@ -15,13 +15,3 @@ void glec(const int line, const char *file) {
     printf("OpenGL error: %i on line %i in %s\n", GLstatus, line, file);
   }
 }
-
-#include "misc.h"
-void printVerts(const uiVert *verts, int count) {
-  fr(i,count) {
-    printf(
-      "%2i: vert pos, gu: %4.2f, %4.2f  -  tex pos, nt: %6.5f, %6.5f\n",
-      i, verts[i].x, verts[i].y, verts[i].s, verts[i].t
-    );
-  }
-}
