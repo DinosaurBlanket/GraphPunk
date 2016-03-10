@@ -30,8 +30,7 @@
 #define uitex_cntr_tr_x   32.0f/uitex_size_x
 #define uitex_cntr_tr_y   32.0f/uitex_size_y
 
-#define uitex_gc_buttonSize_x     uitex_guSize_nt*2.0f
-#define uitex_gc_buttonSize_y     uitex_guSize_nt*2.0f
+#define uitex_gc_buttonSide       uitex_guSize_nt*2.0f
 #define uitex_gc_play_bl_x        32.0f/uitex_size_x
 #define uitex_gc_play_bl_y         0.0f
 #define uitex_gc_pause_bl_x       32.0f/uitex_size_x

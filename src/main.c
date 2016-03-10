@@ -1,7 +1,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #define  GLEW_STATIC
 #include <GL/glew.h>
@@ -55,14 +54,24 @@ int main(int argc, char *argv[]) {
   printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
   #endif
   
+  
   module rootMod = {0};
   plane *curPlane = &rootMod.p;
   initPlane(curPlane, halfVideoSize_gu2);
   
+  //glBindBuffer(GL_ARRAY_BUFFER, 0);
+  //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   
-  GLuint vao_UI;
-  glGenVertexArrays(1, &vao_UI);_glec
-  glBindVertexArray(vao_UI);_glec
+  //vertGroup glorolsVerts;
+  //initGlorolsVerts(&glorolsVerts, halfVideoSize_gu2);
+  
+  //glBindBuffer(GL_ARRAY_BUFFER, 0);
+  //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  
+  
+  //GLuint vao_UI;
+  //glGenVertexArrays(1, &vao_UI);_glec
+  //glBindVertexArray(vao_UI);_glec
   
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -110,6 +119,12 @@ int main(int argc, char *argv[]) {
   float scrollVel_gu2[2]    = {0};
   float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
   
+  //bool paused;
+  //bool auMuted;
+  //bool auSoloed;
+  //bool moveBranch;
+  //bool locked;
+  //bool Saving;
   
   timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timestamp ts_frameDelta = {0,0};
@@ -185,8 +200,13 @@ int main(int argc, char *argv[]) {
           scrollVel_gu2[i] = 0;
         }
       }
+      printf("plane\n");
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
       drawVertGroup(&curPlane->vg);
+      //printf("glorols\n");
+      //glUniform2f(unif_scroll, 0.0, 0.0);_glec
+      //drawVertGroup(&glorolsVerts);
+      printf("end draw\n");
     }
     
     #if LOG_TIMING
