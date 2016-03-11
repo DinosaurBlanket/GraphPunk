@@ -63,8 +63,6 @@ int main(int argc, char *argv[]) {
   );
   if (!shaderProgram) return __LINE__;
   glUseProgram(shaderProgram);_glec
-  GLint attr_pos       = glGetAttribLocation( shaderProgram, "pos");_glec
-  GLint attr_texCoord  = glGetAttribLocation( shaderProgram, "texCoord");_glec
   GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");_glec
   GLint unif_scroll    = glGetUniformLocation(shaderProgram, "scroll");_glec
   glUniform2f(unif_unitScale, unitScale_2[0], unitScale_2[1]);_glec
@@ -79,76 +77,11 @@ int main(int argc, char *argv[]) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);_glec
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);_glec
   
-  const uint32_t uiVertCount = 12;
-  const uint32_t uiElemCount = 36;
-  GLuint uiVao;
-  GLuint uiVbo;
-  GLuint uiEbo;
-  {
-    glGenVertexArrays(1, &uiVao);_glec
-    glBindVertexArray(uiVao);_glec
-    
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    glUseProgram(shaderProgram);_glec
-    glBindTexture(GL_TEXTURE_2D, uiTex);_glec
-    
-    glGenBuffers(1, &uiVbo);_glec
-    glGenBuffers(1, &uiEbo);_glec
-    glBindBuffer(GL_ARRAY_BUFFER,         uiVbo);_glec
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, uiEbo);_glec
-    glBufferData(
-      GL_ARRAY_BUFFER,               // GLenum        target
-      uiVertCount*sizeof(uiVert),   // GLsizeiptr    size
-      0,                             // const GLvoid *data
-      GL_STATIC_DRAW                 // GLenum        usage​
-    );_glec
-    glBufferData(
-      GL_ELEMENT_ARRAY_BUFFER,
-      uiElemCount*sizeof(uint32_t),
-      0,
-      GL_STATIC_DRAW
-    );_glec
-    glEnableVertexAttribArray(attr_pos  );_glec
-    glEnableVertexAttribArray(attr_texCoord);_glec
-    glVertexAttribPointer(
-      attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
-    );_glec
-    glVertexAttribPointer(
-      attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
-    );_glec
-    
-    
-    uiVert centerVerts[4];
-    const float centerVertsCorners_gu[4] = {-1.0, -1.0, 1.0, 1.0};
-    const float centerTexCorners_nt[4] = {
-      uitex_cntr_bl_x, uitex_cntr_bl_y, uitex_cntr_tr_x, uitex_cntr_tr_y
-    };
-    mapTexRectToVerts(centerVerts, centerVertsCorners_gu, centerTexCorners_nt);
-    glBufferSubData(
-      GL_ARRAY_BUFFER,
-      8*sizeof(uiVert),
-      sizeof(centerVerts),
-      centerVerts
-    );_glec
-    
-    uint32_t backInd[] = {
-      // inside border
-      0,1,3, 1,2,3,
-      // outside border
-      4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3,
-      // center marker
-      8,9,11, 9,10,11
-    };
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(backInd), backInd);_glec
-  }
   
   module rootMod = {0};
   plane *curPlane = &rootMod.p;
-  resetPlaneCorners(curPlane, uiVao, halfVideoSize_gu2);
-  
-  
+  initPlane(curPlane, shaderProgram, uiTex, halfVideoSize_gu2);
+  //printVerts(const uiVert *verts, int count);
   
   float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
   float oldCursAbs_gu3[3]   = {0};
@@ -168,7 +101,7 @@ int main(int argc, char *argv[]) {
   int curFrame = 0;
   bool running = true;
   
-  glDrawElements(GL_TRIANGLES, uiElemCount, GL_UNSIGNED_INT, 0);
+  glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -223,25 +156,19 @@ int main(int argc, char *argv[]) {
       screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
       screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
       screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
-      if (screenCrnrs_gu4[0] < curPlane->corners_gu4[0]) {
-        newScrollPos_gu2[0] = curPlane->corners_gu4[0] + halfVideoSize_gu2[0];
-        scrollVel_gu2[0] = 0;
+      fr(i,2) {
+        if (screenCrnrs_gu4[i] < curPlane->corners_gu4[i]) {
+          newScrollPos_gu2[i] = curPlane->corners_gu4[i]+halfVideoSize_gu2[i];
+          scrollVel_gu2[i] = 0;
+        }
+        else if (screenCrnrs_gu4[i+2] > curPlane->corners_gu4[i+2]) {
+          newScrollPos_gu2[i] = curPlane->corners_gu4[i+2]-halfVideoSize_gu2[i];
+          scrollVel_gu2[i] = 0;
+        }
       }
-      else if (screenCrnrs_gu4[2] > curPlane->corners_gu4[2]) {
-        newScrollPos_gu2[0] = curPlane->corners_gu4[2] - halfVideoSize_gu2[0];
-        scrollVel_gu2[0] = 0;
-      }
-      if (screenCrnrs_gu4[1] < curPlane->corners_gu4[1]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[1] + halfVideoSize_gu2[1];
-        scrollVel_gu2[1] = 0;
-      }
-      else if (screenCrnrs_gu4[3] > curPlane->corners_gu4[3]) {
-        newScrollPos_gu2[1] = curPlane->corners_gu4[3] - halfVideoSize_gu2[1];
-        scrollVel_gu2[1] = 0;
-      }
-      glBindVertexArray(uiVao);
+      //glBindVertexArray(curPlane->vao);
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
-      glDrawElements(GL_TRIANGLES, uiElemCount, GL_UNSIGNED_INT, 0);
+      glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);
     }
     
     
