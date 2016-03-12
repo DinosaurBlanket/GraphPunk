@@ -104,25 +104,17 @@ void initPlane(
 ) {
   glGenVertexArrays(1, &pln->vao);_glec
   glBindVertexArray(pln->vao);_glec
-  
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  
   glUseProgram(shader);_glec
   glBindTexture(GL_TEXTURE_2D, tex);_glec
   
   glGenBuffers(1, &pln->vbo);_glec
-  glGenBuffers(1, &pln->ebo);_glec
   glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
   glBufferData(
     GL_ARRAY_BUFFER,               // GLenum        target
     lineVertOffset*sizeof(uiVert), // GLsizeiptr    size
     0,                             // const GLvoid *data
     GL_STATIC_DRAW                 // GLenum        usage​
   );_glec
-  
-  
   // the first 8 verts are set by this function
   resetPlaneCorners(pln, halfVideoSize_gu2);
   // the next 4 are set below
@@ -139,17 +131,8 @@ void initPlane(
     centerVerts
   );_glec
   
-  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
-  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
-  glEnableVertexAttribArray(attr_pos  );_glec
-  glEnableVertexAttribArray(attr_texCoord);_glec
-  glVertexAttribPointer(
-    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
-  );_glec
-  glVertexAttribPointer(
-    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
-  );_glec
-  
+  glGenBuffers(1, &pln->ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
   uint32_t backInd[] = {
     // inside border
     0,1,3, 1,2,3,
@@ -164,141 +147,98 @@ void initPlane(
     backInd,
     GL_STATIC_DRAW
   );_glec
+  
+  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
+  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
+  glEnableVertexAttribArray(attr_pos  );_glec
+  glEnableVertexAttribArray(attr_texCoord);_glec
+  glVertexAttribPointer(
+    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
+  );_glec
+  glVertexAttribPointer(
+    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
+  );_glec
 }
 
 
-/*
-void setRectElems(uint32_t *elems, uint32_t rectCount) {
-  for (uint32_t i = 0; i < 6*rectCount; i += 6) {
-    elems[i  ] = i;
-    elems[i+1] = i+1;
-    elems[i+2] = i+3;
-    elems[i+3] = i+1;
-    elems[i+4] = i+2;
-    elems[i+5] = i+3;
+
+void setRectElems(uint32_t *elems, const uint32_t rectCount) {
+  uint32_t v = 0;
+  uint32_t e = 0;
+  for (; e < 6*rectCount; v += 4, e += 6) {
+    elems[e  ] = v;
+    elems[e+1] = v+1;
+    elems[e+2] = v+3;
+    elems[e+3] = v+1;
+    elems[e+4] = v+2;
+    elems[e+5] = v+3;
   }
 }
 
-void initGlorolsVerts(vertGroup *vg, float halfVideoSize_gu2[2]) {
-  const int visibleButCount = 11;
+void initGlorols(
+  GLuint vao,
+  GLuint shader,
+  GLuint tex,
+  float  halfVideoSize_gu2[2]
+) {
+  glBindVertexArray(vao);_glec
+  glUseProgram(shader);_glec
+  glBindTexture(GL_TEXTURE_2D, tex);_glec
+  
   const float butSide_gu = 2.0f;
-  const float butLeftEdge_gu = 0.0f - butSide_gu*(visibleButCount/2.0f);
-  const int vertCount = 4*visibleButCount;
-  const int elemCount = 6*visibleButCount;
-  int vertIndex = 0;
-  uiVert verts[vertCount];
+  const float butLeftEdge_gu = 0.0f - butSide_gu*(glorolsButCount/2.0f);
+  const int vertCount = 4*glorolsButCount;
+  const int elemCount = 6*glorolsButCount;
+  const float uitexButCorners[2*glorolsButCount] = {
+    uitex_gc_play_bl_x,     uitex_gc_play_bl_y,
+    uitex_gc_step_bl_x,     uitex_gc_step_bl_y,
+    uitex_gc_unmuted_bl_x,  uitex_gc_unmuted_bl_y,
+    uitex_gc_unsoloed_bl_x, uitex_gc_unsoloed_bl_y,
+    uitex_gc_moveNode_bl_x, uitex_gc_moveNode_bl_y,
+    uitex_gc_unLock_bl_x,   uitex_gc_unLock_bl_y,
+    uitex_gc_up_bl_x,       uitex_gc_up_bl_y,
+    uitex_gc_top_bl_x,      uitex_gc_top_bl_y,
+    uitex_gc_back_bl_x,     uitex_gc_back_bl_y,
+    uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
+    uitex_gc_save_bl_x,     uitex_gc_save_bl_y
+  };
   float vertCorners[4] = {
     butLeftEdge_gu,              halfVideoSize_gu2[1] - butSide_gu, 
     butLeftEdge_gu + butSide_gu, halfVideoSize_gu2[1]
   };
+  uiVert verts[vertCount];
   float texCorners[4];
-  
-  texCorners[0] = uitex_gc_play_bl_x;
-  texCorners[1] = uitex_gc_play_bl_y;
-  texCorners[2] = uitex_gc_play_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_play_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_step_bl_x;
-  texCorners[1] = uitex_gc_step_bl_y;
-  texCorners[2] = uitex_gc_step_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_step_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_unmuted_bl_x;
-  texCorners[1] = uitex_gc_unmuted_bl_y;
-  texCorners[2] = uitex_gc_unmuted_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_unmuted_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_unsoloed_bl_x;
-  texCorners[1] = uitex_gc_unsoloed_bl_y;
-  texCorners[2] = uitex_gc_unsoloed_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_unsoloed_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_moveNode_bl_x;
-  texCorners[1] = uitex_gc_moveNode_bl_y;
-  texCorners[2] = uitex_gc_moveNode_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_moveNode_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_unLock_bl_x;
-  texCorners[1] = uitex_gc_unLock_bl_y;
-  texCorners[2] = uitex_gc_unLock_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_unLock_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_up_bl_x;
-  texCorners[1] = uitex_gc_up_bl_y;
-  texCorners[2] = uitex_gc_up_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_up_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_top_bl_x;
-  texCorners[1] = uitex_gc_top_bl_y;
-  texCorners[2] = uitex_gc_top_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_top_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_back_bl_x;
-  texCorners[1] = uitex_gc_back_bl_y;
-  texCorners[2] = uitex_gc_back_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_back_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_forward_bl_x;
-  texCorners[1] = uitex_gc_forward_bl_y;
-  texCorners[2] = uitex_gc_forward_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_forward_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  vertIndex += 4;
-  vertCorners[0] += butSide_gu;
-  vertCorners[2] += butSide_gu;
-  texCorners[0] = uitex_gc_save_bl_x;
-  texCorners[1] = uitex_gc_save_bl_y;
-  texCorners[2] = uitex_gc_save_bl_x + uitex_gc_buttonSide;
-  texCorners[3] = uitex_gc_save_bl_y + uitex_gc_buttonSide;
-  mapTexRectToVerts(&verts[vertIndex], vertCorners, texCorners);
-  
-  puts("verts:");
-  printVerts(verts, vertCount);
-  
-  initVertGroup(vg, vertCount, elemCount);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);_glec
+  fr(b, glorolsButCount) {
+    texCorners[0] = uitexButCorners[2*b];
+    texCorners[1] = uitexButCorners[2*b + 1];
+    texCorners[2] = uitexButCorners[2*b]     + uitex_gc_buttonSide;
+    texCorners[3] = uitexButCorners[2*b + 1] + uitex_gc_buttonSide;
+    mapTexRectToVerts(&verts[4*b], vertCorners, texCorners);
+    vertCorners[0] += butSide_gu;
+    vertCorners[2] += butSide_gu;
+  }
+  GLuint vbo;
+  glGenBuffers(1, &vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
+  glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);_glec
   
   uint32_t elems[elemCount];
-  setRectElems(elems, visibleButCount);
-  puts("\nelems");
-  fr(i,elemCount) {printf("%2i: %2i\n", i, elems[i]);}
-  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(elems), elems);_glec
+  setRectElems(elems, glorolsButCount);
+  GLuint ebo;
+  glGenBuffers(1, &ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
+  glBufferData(
+    GL_ELEMENT_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW
+  );_glec
+  
+  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
+  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
+  glEnableVertexAttribArray(attr_pos  );_glec
+  glEnableVertexAttribArray(attr_texCoord);_glec
+  glVertexAttribPointer(
+    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
+  );_glec
+  glVertexAttribPointer(
+    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
+  );_glec
 }
-*/

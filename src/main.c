@@ -56,6 +56,10 @@ int main(int argc, char *argv[]) {
   #endif
   
   
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  
+  
   GLuint shaderProgram = createShaderProgram(
     "src/vert.glsl", 
     "src/frag.glsl", 
@@ -81,7 +85,11 @@ int main(int argc, char *argv[]) {
   module rootMod = {0};
   plane *curPlane = &rootMod.p;
   initPlane(curPlane, shaderProgram, uiTex, halfVideoSize_gu2);
-  //printVerts(const uiVert *verts, int count);
+  
+  GLuint glorolsVao;
+  glGenVertexArrays(1, &glorolsVao);_glec
+  initGlorols(glorolsVao, shaderProgram, uiTex, halfVideoSize_gu2);
+  
   
   float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
   float oldCursAbs_gu3[3]   = {0};
@@ -99,9 +107,8 @@ int main(int argc, char *argv[]) {
   getTimestamp(&ts_newFrameStart);
   
   int curFrame = 0;
+  bool redraw  = true;
   bool running = true;
-  
-  glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);
   
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
@@ -166,9 +173,19 @@ int main(int argc, char *argv[]) {
           scrollVel_gu2[i] = 0;
         }
       }
-      //glBindVertexArray(curPlane->vao);
+      redraw = true;
+    }
+    
+    if (redraw) {
+      glBindVertexArray(curPlane->vao);
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
       glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);
+      
+      glBindVertexArray(glorolsVao);
+      glUniform2f(unif_scroll, 0, 0);_glec
+      glDrawElements(GL_TRIANGLES, 6*glorolsButCount, GL_UNSIGNED_INT, 0);
+      
+      redraw = false;
     }
     
     
