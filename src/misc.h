@@ -27,11 +27,6 @@ typedef struct {
   // *specialNodes;
 } module;
 
-void mapTexRectToVerts(
-  uiVert     *destVerts,
-  const float destCorners_gu[4], // grid units
-  const float srcCorners_nt[4]   // normalized texture coordinates
-);
 
 void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]);
 void initPlane(
@@ -40,7 +35,6 @@ void initPlane(
   GLuint tex,
   float  halfVideoSize_gu2[2]
 );
-void setRectElems(uint32_t *elems, uint32_t rectCount);
 
 #define glorolsButCount 11
 void initGlorols(

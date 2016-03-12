@@ -95,6 +95,18 @@ void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
 }
 
+void initUiVertAttribs(GLuint shader) {
+  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
+  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
+  glEnableVertexAttribArray(attr_pos  );_glec
+  glEnableVertexAttribArray(attr_texCoord);_glec
+  glVertexAttribPointer(
+    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
+  );_glec
+  glVertexAttribPointer(
+    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
+  );_glec
+}
 
 void initPlane(
   plane *pln,
@@ -148,19 +160,8 @@ void initPlane(
     GL_STATIC_DRAW
   );_glec
   
-  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
-  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
-  glEnableVertexAttribArray(attr_pos  );_glec
-  glEnableVertexAttribArray(attr_texCoord);_glec
-  glVertexAttribPointer(
-    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
-  );_glec
-  glVertexAttribPointer(
-    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
-  );_glec
+  initUiVertAttribs(shader);
 }
-
-
 
 void setRectElems(uint32_t *elems, const uint32_t rectCount) {
   uint32_t v = 0;
@@ -231,14 +232,5 @@ void initGlorols(
     GL_ELEMENT_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW
   );_glec
   
-  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
-  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
-  glEnableVertexAttribArray(attr_pos  );_glec
-  glEnableVertexAttribArray(attr_texCoord);_glec
-  glVertexAttribPointer(
-    attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
-  );_glec
-  glVertexAttribPointer(
-    attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
-  );_glec
+  initUiVertAttribs(shader);
 }
