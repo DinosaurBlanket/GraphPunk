@@ -1,5 +1,4 @@
 
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -8,9 +7,32 @@
 #include <GL/glew.h>
 
 #include "error.h"
+#include "oglTools.h"
 #include "../img/uitex.h"
-#include "misc.h"
 
+#define fr(i, bound) for (int i = 0; i < (bound); i++)
+
+typedef struct {float x; float y; float s; float t;} uiVert;
+
+typedef struct {
+  float    corners_gu4[4]; // xyxy, bottom left and top right
+  float    pos_gudc2[2];
+  GLuint   vao;
+  GLuint   vbo;
+  GLuint   ebo;
+  uint32_t lineCount;
+  uint32_t lineCap;
+  uint32_t nodeCount;
+  uint32_t nodeCap;
+  //int    depth; // in module tree
+  //vinode *vinodes; // vinodes keep track of their data location in vao
+} plane;
+
+typedef struct {
+  plane p;
+  //exnode *exnodes;
+  // *specialNodes;
+} module;
 
 bool allEq(const float *l, const float *r, int c) {
   fr(i,c) {if (l[i] != r[i]) return false;}
@@ -53,9 +75,14 @@ void mapTexRectToVerts(
   destVerts[3].t = srcCorners_nt[1];
 }
 
+module rootMod = {0};
+plane *pln = NULL;
+float unitScale_2[2];
+float halfVideoSize_gu2[2];
+const float gridUnit_px = 16;
 const float planePadding_gu = 12;
 
-void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
+void resetPlaneCorners() {
   pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // bl
   pln->corners_gu4[1] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // tl
   pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // tr
@@ -91,13 +118,39 @@ void resetPlaneCorners(plane *pln, float halfVideoSize_gu2[2]) {
     }, 
   };
   
-  //glBindVertexArray(pln->vao);_glec
+  glBindVertexArray(pln->vao);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
 }
 
-void initUiVertAttribs(GLuint shader) {
-  GLint attr_pos      = glGetAttribLocation(shader, "pos");_glec
-  GLint attr_texCoord = glGetAttribLocation(shader, "texCoord");_glec
+GLuint uiShader;
+GLint  unif_scroll;
+GLint  unif_unitScale;
+GLuint uiTex;
+void initUiShader() {
+  uiShader = createShaderProgram(
+    "src/vert.glsl", 
+    "src/frag.glsl", 
+    "uiShader"
+  );
+  glUseProgram(uiShader);_glec
+  unif_unitScale = glGetUniformLocation(uiShader, "unitScale");_glec
+  unif_scroll    = glGetUniformLocation(uiShader, "scroll");_glec
+  glUniform2f(unif_unitScale, unitScale_2[0], unitScale_2[1]);_glec
+  glUniform2f(unif_scroll, 0, 0);_glec
+  
+  glGenTextures(1, &uiTex);_glec
+  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
+  texFromBmp(uitex_path);
+  glUniform1i(glGetUniformLocation(uiShader, "tex"), 0);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);_glec
+}
+
+void setUiVertAttribs() {
+  GLint attr_pos      = glGetAttribLocation(uiShader, "pos");_glec
+  GLint attr_texCoord = glGetAttribLocation(uiShader, "texCoord");_glec
   glEnableVertexAttribArray(attr_pos  );_glec
   glEnableVertexAttribArray(attr_texCoord);_glec
   glVertexAttribPointer(
@@ -108,16 +161,15 @@ void initUiVertAttribs(GLuint shader) {
   );_glec
 }
 
-void initPlane(
-  plane *pln,
-  GLuint shader,
-  GLuint tex,
-  float  halfVideoSize_gu2[2]
-) {
+// first verts of every plane are for background
+#define lineVertOffset 12
+#define lineElemOffset 36
+
+void initPlane() {
   glGenVertexArrays(1, &pln->vao);_glec
   glBindVertexArray(pln->vao);_glec
-  glUseProgram(shader);_glec
-  glBindTexture(GL_TEXTURE_2D, tex);_glec
+  glUseProgram(uiShader);_glec
+  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
   glGenBuffers(1, &pln->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
@@ -160,13 +212,13 @@ void initPlane(
     GL_STATIC_DRAW
   );_glec
   
-  initUiVertAttribs(shader);
+  setUiVertAttribs(uiShader);
 }
 
-void setRectElems(uint32_t *elems, const uint32_t rectCount) {
+void setQuadElems(uint32_t *elems, const uint32_t rectCount) {
   uint32_t v = 0;
   uint32_t e = 0;
-  for (; e < 6*rectCount; v += 4, e += 6) {
+  for (; v < 4*rectCount; v += 4, e += 6) {
     elems[e  ] = v;
     elems[e+1] = v+1;
     elems[e+2] = v+3;
@@ -176,18 +228,22 @@ void setRectElems(uint32_t *elems, const uint32_t rectCount) {
   }
 }
 
-void initGlorols(
-  GLuint vao,
-  GLuint shader,
-  GLuint tex,
-  float  halfVideoSize_gu2[2]
-) {
-  glBindVertexArray(vao);_glec
-  glUseProgram(shader);_glec
-  glBindTexture(GL_TEXTURE_2D, tex);_glec
+GLuint  glorolsVao;
+#define glorolsButCount 11
+#define butSide_gu 2.0f
+float   golorolsCorners_gu[4];
+
+void initGlorols() {
+  glGenVertexArrays(1, &glorolsVao);_glec
+  glBindVertexArray(glorolsVao);_glec
+  glUseProgram(uiShader);_glec
+  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
-  const float butSide_gu = 2.0f;
-  const float butLeftEdge_gu = 0.0f - butSide_gu*(glorolsButCount/2.0f);
+  golorolsCorners_gu[0] = -butSide_gu*(glorolsButCount/2.0f);
+  golorolsCorners_gu[1] = halfVideoSize_gu2[1] - butSide_gu;
+  golorolsCorners_gu[2] =  butSide_gu*(glorolsButCount/2.0f);
+  golorolsCorners_gu[3] = halfVideoSize_gu2[1];
+  
   const int vertCount = 4*glorolsButCount;
   const int elemCount = 6*glorolsButCount;
   const float uitexButCorners[2*glorolsButCount] = {
@@ -204,8 +260,8 @@ void initGlorols(
     uitex_gc_save_bl_x,     uitex_gc_save_bl_y
   };
   float vertCorners[4] = {
-    butLeftEdge_gu,              halfVideoSize_gu2[1] - butSide_gu, 
-    butLeftEdge_gu + butSide_gu, halfVideoSize_gu2[1]
+    golorolsCorners_gu[0],              golorolsCorners_gu[1], 
+    golorolsCorners_gu[0] + butSide_gu, golorolsCorners_gu[3]
   };
   uiVert verts[vertCount];
   float texCorners[4];
@@ -224,7 +280,7 @@ void initGlorols(
   glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);_glec
   
   uint32_t elems[elemCount];
-  setRectElems(elems, glorolsButCount);
+  setQuadElems(elems, glorolsButCount);
   GLuint ebo;
   glGenBuffers(1, &ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
@@ -232,5 +288,82 @@ void initGlorols(
     GL_ELEMENT_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW
   );_glec
   
-  initUiVertAttribs(shader);
+  setUiVertAttribs(uiShader);
+}
+
+
+void initRoot(float videoSize_px2[2]) {
+  fr(i,2) {unitScale_2[i] = gridUnit_px/(videoSize_px2[i]/2.0f);}
+  fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit_px)/2.0f;}
+  pln = &rootMod.p;
+  initUiShader();
+  initPlane();
+  initGlorols();
+}
+
+float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
+float oldCursAbs_gu3[3]   = {0};
+float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
+float oldScrollPos_gu2[2] = {0};
+float scrollVel_gu2[2]    = {0};
+float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
+
+void onCurMove(int posX_px, int posY_px) {
+  newCursAbs_gu3[0] =  posX_px/gridUnit_px - halfVideoSize_gu2[0];
+  newCursAbs_gu3[1] = -posY_px/gridUnit_px + halfVideoSize_gu2[1];
+}
+void onClickDn(int posX_px, int posY_px) {
+  newCursAbs_gu3[2] = 1.0f;
+}
+void onClickUp(int posX_px, int posY_px) {
+  newCursAbs_gu3[2] = 0;
+}
+
+bool redrawPlane   = true;
+bool redrawGlorols = true;
+
+void perFrame() {
+  fr(i,2) {oldScrollPos_gu2[i] = newScrollPos_gu2[i];}
+  if (newCursAbs_gu3[2]) {
+    if (oldCursAbs_gu3[2]) {
+      fr(i,2) {newScrollPos_gu2[i] += newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
+    }
+    else {fr(i,2) {scrollVel_gu2[i] = 0;}}
+  }
+  else {
+    if (oldCursAbs_gu3[2]) {
+      fr(i,2) {scrollVel_gu2[i] = newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
+    }
+    fr(i,2) {newScrollPos_gu2[i] += scrollVel_gu2[i];}
+  }
+  if (!allEq(newScrollPos_gu2, oldScrollPos_gu2, 2)) {
+    screenCrnrs_gu4[0] = newScrollPos_gu2[0]-halfVideoSize_gu2[0];
+    screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
+    screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
+    screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
+    fr(i,2) {
+      if (screenCrnrs_gu4[i] < pln->corners_gu4[i]) {
+        newScrollPos_gu2[i] = pln->corners_gu4[i]+halfVideoSize_gu2[i];
+        scrollVel_gu2[i] = 0;
+      }
+      else if (screenCrnrs_gu4[i+2] > pln->corners_gu4[i+2]) {
+        newScrollPos_gu2[i] = pln->corners_gu4[i+2]-halfVideoSize_gu2[i];
+        scrollVel_gu2[i] = 0;
+      }
+    }
+    redrawPlane = true;
+  }
+  if (redrawPlane || redrawGlorols) {
+    if (redrawPlane) {
+      glBindVertexArray(pln->vao);_glec
+      glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
+      glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);_glec
+      redrawPlane = false;
+    }
+    glBindVertexArray(glorolsVao);_glec
+    glUniform2f(unif_scroll, 0, 0);_glec
+    glDrawElements(GL_TRIANGLES, 6*glorolsButCount, GL_UNSIGNED_INT, 0);_glec
+    redrawGlorols = false;
+  }
+  fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
 }

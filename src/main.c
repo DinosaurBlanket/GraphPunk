@@ -2,28 +2,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #define  GLEW_STATIC
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
 #include "error.h"
-#include "oglTools.h"
-#include "../img/uitex.h"
 #include "timestamp.h"
-#include "misc.h"
-
+#include "ui.h"
 
 
 int main(int argc, char *argv[]) {
   float videoSize_px2[2] = {800, 600}; // pixels
-	float gridUnit = 16;                 // pixels
-	float unitScale_2[2];
-  fr(i,2) {unitScale_2[i] = gridUnit/(videoSize_px2[i]/2.0f);}
-  float halfVideoSize_gu2[2];          // grid units
-  fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit)/2.0f;}
-  
-  
   SDL_Window   *window    = NULL;
   SDL_GLContext GlContext = NULL;
   SDL_Init(SDL_INIT_VIDEO);_sdlec
@@ -55,49 +44,10 @@ int main(int argc, char *argv[]) {
   printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
   #endif
   
-  
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
-  
-  GLuint shaderProgram = createShaderProgram(
-    "src/vert.glsl", 
-    "src/frag.glsl", 
-    "shaderProgram"
-  );
-  if (!shaderProgram) return __LINE__;
-  glUseProgram(shaderProgram);_glec
-  GLint unif_unitScale = glGetUniformLocation(shaderProgram, "unitScale");_glec
-  GLint unif_scroll    = glGetUniformLocation(shaderProgram, "scroll");_glec
-  glUniform2f(unif_unitScale, unitScale_2[0], unitScale_2[1]);_glec
-  glUniform2f(unif_scroll, 0, 0);_glec
-  GLuint uiTex = 0;
-  glGenTextures(1, &uiTex);_glec
-  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
-  texFromBmp(uitex_path);
-  glUniform1i(glGetUniformLocation(shaderProgram, "tex"), 0);_glec
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);_glec
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);_glec
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);_glec
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);_glec
-  
-  
-  module rootMod = {0};
-  plane *curPlane = &rootMod.p;
-  initPlane(curPlane, shaderProgram, uiTex, halfVideoSize_gu2);
-  
-  GLuint glorolsVao;
-  glGenVertexArrays(1, &glorolsVao);_glec
-  initGlorols(glorolsVao, shaderProgram, uiTex, halfVideoSize_gu2);
-  
-  
-  float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
-  float oldCursAbs_gu3[3]   = {0};
-  float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
-  float oldScrollPos_gu2[2] = {0};
-  float scrollVel_gu2[2]    = {0};
-  float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
-  
+  initRoot(videoSize_px2);
   
   timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timestamp ts_frameDelta = {0,0};
@@ -106,8 +56,7 @@ int main(int argc, char *argv[]) {
   #endif
   getTimestamp(&ts_newFrameStart);
   
-  int curFrame = 0;
-  bool redraw  = true;
+  int  curFrame = 0;
   bool running = true;
   
 	while (running) {
@@ -121,73 +70,31 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
-    fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          newCursAbs_gu3[0] =  event.motion.x/gridUnit - halfVideoSize_gu2[0];
-          newCursAbs_gu3[1] = -event.motion.y/gridUnit + halfVideoSize_gu2[1];
+          onCurMove(event.motion.x, event.motion.y);
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCursAbs_gu3[2] = 1.0f; break;
+            case SDL_BUTTON_LEFT:
+              onClickDn(event.button.x, event.button.y);
+              break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
-            case SDL_BUTTON_LEFT: newCursAbs_gu3[2] = 0; break;
+            case SDL_BUTTON_LEFT:
+              onClickUp(event.button.x, event.button.y);
+              break;
           }
           break;
       }
     }
     
-    fr(i,2) {oldScrollPos_gu2[i] = newScrollPos_gu2[i];}
-    if (newCursAbs_gu3[2]) {
-      if (oldCursAbs_gu3[2]) {
-        fr(i,2) {newScrollPos_gu2[i] += newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
-      }
-      else {fr(i,2) {scrollVel_gu2[i] = 0;}}
-    }
-    else {
-      if (oldCursAbs_gu3[2]) {
-        fr(i,2) {scrollVel_gu2[i] = newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
-      }
-      fr(i,2) {newScrollPos_gu2[i] += scrollVel_gu2[i];}
-    }
-    
-    
-    if (!allEq(newScrollPos_gu2, oldScrollPos_gu2, 2)) {
-      screenCrnrs_gu4[0] = newScrollPos_gu2[0]-halfVideoSize_gu2[0];
-      screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
-      screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
-      screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
-      fr(i,2) {
-        if (screenCrnrs_gu4[i] < curPlane->corners_gu4[i]) {
-          newScrollPos_gu2[i] = curPlane->corners_gu4[i]+halfVideoSize_gu2[i];
-          scrollVel_gu2[i] = 0;
-        }
-        else if (screenCrnrs_gu4[i+2] > curPlane->corners_gu4[i+2]) {
-          newScrollPos_gu2[i] = curPlane->corners_gu4[i+2]-halfVideoSize_gu2[i];
-          scrollVel_gu2[i] = 0;
-        }
-      }
-      redraw = true;
-    }
-    
-    if (redraw) {
-      glBindVertexArray(curPlane->vao);
-      glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
-      glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);
-      
-      glBindVertexArray(glorolsVao);
-      glUniform2f(unif_scroll, 0, 0);_glec
-      glDrawElements(GL_TRIANGLES, 6*glorolsButCount, GL_UNSIGNED_INT, 0);
-      
-      redraw = false;
-    }
-    
+    perFrame();
     
     #if LOG_TIMING
 		getTimestamp(&ts_now);
