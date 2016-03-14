@@ -75,19 +75,19 @@ int main(int argc, char *argv[]) {
       switch (event.type) {
         case SDL_QUIT: running = false; break;
         case SDL_MOUSEMOTION:
-          onCurMove(event.motion.x, event.motion.y);
+          curMove(event.motion.x, event.motion.y);
           break;
         case SDL_MOUSEBUTTONDOWN:
           switch (event.button.button) {
             case SDL_BUTTON_LEFT:
-              onClickDn(event.button.x, event.button.y);
+              clickDn(event.button.x, event.button.y);
               break;
           }
           break;
         case SDL_MOUSEBUTTONUP:
           switch (event.button.button) {
             case SDL_BUTTON_LEFT:
-              onClickUp(event.button.x, event.button.y);
+              clickUp(event.button.x, event.button.y);
               break;
           }
           break;
