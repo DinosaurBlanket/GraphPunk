@@ -12,11 +12,9 @@
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
 
-typedef struct {float x; float y; float s; float t;} uiVert;
-
 typedef struct {
-  float    corners_gu4[4]; // xyxy, bottom left and top right
-  float    pos_gudc2[2];
+  float    rect_gu[4];
+  //float    pos_gudc2[2]; // "newScrollPos_gu2"
   GLuint   vao;
   GLuint   vbo;
   GLuint   ebo;
@@ -39,40 +37,40 @@ bool allEq(const float *l, const float *r, int c) {
   return true;
 }
 
-void printVerts(const uiVert *verts, int count) {
-  fr(i,count) {
+void printVerts(const float *vertData, int vertCount) {
+  fr(i,vertCount) {
     printf(
       "%2i: vert pos, gu: %4.2f, %4.2f  -  tex pos, nt: %6.5f, %6.5f\n",
-      i, verts[i].x, verts[i].y, verts[i].s, verts[i].t
+      i, vertData[4*i], vertData[4*i + 1], vertData[4*i + 2], vertData[4*i + 3]
     );
   }
 }
 
 void mapTexRectToVerts(
-  uiVert     *destVerts,
+  float      *destVertData,
   const float destRect_gu[4], // grid units
   const float srcRect_nt[4]   // normalized texture coordinates
 ) {
   // bl
-  destVerts[0].x = destRect_gu[0];
-  destVerts[0].y = destRect_gu[1];
-  destVerts[0].s = srcRect_nt[0];
-  destVerts[0].t = srcRect_nt[1];
+  destVertData[ 0] = destRect_gu[0];
+  destVertData[ 1] = destRect_gu[1];
+  destVertData[ 2] =  srcRect_nt[0];
+  destVertData[ 3] =  srcRect_nt[1];
   // tl
-  destVerts[1].x = destRect_gu[0];
-  destVerts[1].y = destRect_gu[3];
-  destVerts[1].s = srcRect_nt[0];
-  destVerts[1].t = srcRect_nt[3];
+  destVertData[ 4] = destRect_gu[0];
+  destVertData[ 5] = destRect_gu[3];
+  destVertData[ 6] =  srcRect_nt[0];
+  destVertData[ 7] =  srcRect_nt[3];
   // tr
-  destVerts[2].x = destRect_gu[2];
-  destVerts[2].y = destRect_gu[3];
-  destVerts[2].s = srcRect_nt[2];
-  destVerts[2].t = srcRect_nt[3];
+  destVertData[ 8] = destRect_gu[2];
+  destVertData[ 9] = destRect_gu[3];
+  destVertData[10] =  srcRect_nt[2];
+  destVertData[11] =  srcRect_nt[3];
   // br
-  destVerts[3].x = destRect_gu[2];
-  destVerts[3].y = destRect_gu[1];
-  destVerts[3].s = srcRect_nt[2];
-  destVerts[3].t = srcRect_nt[1];
+  destVertData[12] = destRect_gu[2];
+  destVertData[13] = destRect_gu[1];
+  destVertData[14] =  srcRect_nt[2];
+  destVertData[15] =  srcRect_nt[1];
 }
 
 module rootMod = {0};
@@ -83,43 +81,42 @@ const float gridUnit_px = 16;
 const float planePadding_gu = 12;
 
 void resetPlaneRect() {
-  pln->corners_gu4[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // bl
-  pln->corners_gu4[1] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // tl
-  pln->corners_gu4[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // tr
-  pln->corners_gu4[3] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // br
-  uiVert backVerts[8] = {
+  pln->rect_gu[0] = floor(-halfVideoSize_gu2[0] - planePadding_gu); // bl
+  pln->rect_gu[1] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // tl
+  pln->rect_gu[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // tr
+  pln->rect_gu[3] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // br
+  float backVertData[32] = {
     // inside border
-    {    // 0 bl
-      pln->corners_gu4[0]+1, pln->corners_gu4[1]+1, 
-      uitex_ibord_bl_x, uitex_ibord_bl_y
-    }, { // 1 tl
-      pln->corners_gu4[0]+1, pln->corners_gu4[3]-1, 
-      uitex_ibord_tl_x, uitex_ibord_tl_y
-    }, { // 2 tr
-      pln->corners_gu4[2]-1, pln->corners_gu4[3]-1, 
-      uitex_ibord_tr_x, uitex_ibord_tr_y
-    }, { // 3 br
-      pln->corners_gu4[2]-1, pln->corners_gu4[1]+1, 
-      uitex_ibord_br_x, uitex_ibord_br_y
-    }, 
+    // bl
+    pln->rect_gu[0]+1, pln->rect_gu[1]+1, 
+    uitex_ibord_bl_x, uitex_ibord_bl_y,
+    // tl
+    pln->rect_gu[0]+1, pln->rect_gu[3]-1, 
+    uitex_ibord_tl_x, uitex_ibord_tl_y,
+    // tr
+    pln->rect_gu[2]-1, pln->rect_gu[3]-1, 
+    uitex_ibord_tr_x, uitex_ibord_tr_y,
+    // br
+    pln->rect_gu[2]-1, pln->rect_gu[1]+1, 
+    uitex_ibord_br_x, uitex_ibord_br_y,
+    
     // outside border
-    {    // 0 bl
-      pln->corners_gu4[0], pln->corners_gu4[1], 
-      uitex_obord_bl_x, uitex_obord_bl_y
-    }, { // 1 tl
-      pln->corners_gu4[0], pln->corners_gu4[3], 
-      uitex_obord_tl_x, uitex_obord_tl_y
-    }, { // 2 tr
-      pln->corners_gu4[2], pln->corners_gu4[3], 
-      uitex_obord_tr_x, uitex_obord_tr_y
-    }, { // 3 br
-      pln->corners_gu4[2], pln->corners_gu4[1], 
-      uitex_obord_br_x, uitex_obord_br_y
-    }, 
+    // bl
+    pln->rect_gu[0], pln->rect_gu[1], 
+    uitex_obord_bl_x, uitex_obord_bl_y,
+    // tl
+    pln->rect_gu[0], pln->rect_gu[3], 
+    uitex_obord_tl_x, uitex_obord_tl_y,
+    // tr
+    pln->rect_gu[2], pln->rect_gu[3], 
+    uitex_obord_tr_x, uitex_obord_tr_y,
+    // br
+    pln->rect_gu[2], pln->rect_gu[1], 
+    uitex_obord_br_x, uitex_obord_br_y,
   };
   
   glBindVertexArray(pln->vao);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVerts), backVerts);_glec
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVertData), backVertData);_glec
 }
 
 GLuint uiShader;
@@ -151,7 +148,7 @@ void initUiShader() {
 void setUiVertAttribs() {
   GLint attr_pos      = glGetAttribLocation(uiShader, "pos");_glec
   GLint attr_texCoord = glGetAttribLocation(uiShader, "texCoord");_glec
-  glEnableVertexAttribArray(attr_pos  );_glec
+  glEnableVertexAttribArray(attr_pos);_glec
   glEnableVertexAttribArray(attr_texCoord);_glec
   glVertexAttribPointer(
     attr_pos,      2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)0
@@ -162,7 +159,7 @@ void setUiVertAttribs() {
 }
 
 // first verts of every plane are for background
-#define lineVertOffset 12
+#define lineVertOffset 48 // 12 vertices, 48 floats
 #define lineElemOffset 36
 
 void initPlane() {
@@ -175,14 +172,14 @@ void initPlane() {
   glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
   glBufferData(
     GL_ARRAY_BUFFER,               // GLenum        target
-    lineVertOffset*sizeof(uiVert), // GLsizeiptr    size
+    lineVertOffset*sizeof(float),  // GLsizeiptr    size
     0,                             // const GLvoid *data
     GL_STATIC_DRAW                 // GLenum        usage​
   );_glec
   // the first 8 verts are set by this function
   resetPlaneRect(pln, halfVideoSize_gu2);
   // the next 4 are set below
-  uiVert centerVerts[4];
+  float centerVerts[16];
   const float centerVertsRect_gu[4] = {-1.0, -1.0, 1.0, 1.0};
   const float centerTexRect_nt[4] = {
     uitex_cntr_bl_x, uitex_cntr_bl_y, uitex_cntr_tr_x, uitex_cntr_tr_y
@@ -190,7 +187,7 @@ void initPlane() {
   mapTexRectToVerts(centerVerts, centerVertsRect_gu, centerTexRect_nt);
   glBufferSubData(
     GL_ARRAY_BUFFER,
-    8*sizeof(uiVert),
+    32*sizeof(float),
     sizeof(centerVerts),
     centerVerts
   );_glec
@@ -228,62 +225,110 @@ void setRectElems(uint32_t *elems, const uint32_t rectCount) {
   }
 }
 
-GLuint  glorolsVao;
-#define glorolsButCount 11
-#define butSide_gu 2.0f
-float   golorolsRect_gu[4];
 
-void initGlorols() {
-  glGenVertexArrays(1, &glorolsVao);_glec
-  glBindVertexArray(glorolsVao);_glec
+
+typedef void (*cursEventHandler)(void *data);
+
+//cursEventHandler onClickDn = NULL;
+cursEventHandler onDrag    = NULL;
+cursEventHandler onClickUp = NULL;
+
+void doNothing(void *data) {}
+
+typedef struct {
+  float           *verts; // will likely be part of a larger array
+  cursEventHandler onClickDn;
+  cursEventHandler onDrag;
+  cursEventHandler onClickUp;
+} uiElement;
+
+
+GLuint gc_vao;
+GLuint gc_vbo;
+GLuint gc_ebo;
+const float gc_butSide_gu = 2;
+float  gc_rect_gu[4];
+typedef enum {
+  gcid_play, gcid_step, gcid_mute, gcid_solo, gcid_mvBr, gcid_lock,
+  gcid_up,   gcid_top,  gcid_back, gcid_frwd, gcid_save, gcid_count
+} gcid;
+const float uitexButCorners_nt[2*gcid_count] = {
+  uitex_gc_play_bl_x,     uitex_gc_play_bl_y,
+  uitex_gc_step_bl_x,     uitex_gc_step_bl_y,
+  uitex_gc_unmuted_bl_x,  uitex_gc_unmuted_bl_y,
+  uitex_gc_unsoloed_bl_x, uitex_gc_unsoloed_bl_y,
+  uitex_gc_moveNode_bl_x, uitex_gc_moveNode_bl_y,
+  uitex_gc_unLock_bl_x,   uitex_gc_unLock_bl_y,
+  uitex_gc_up_bl_x,       uitex_gc_up_bl_y,
+  uitex_gc_top_bl_x,      uitex_gc_top_bl_y,
+  uitex_gc_back_bl_x,     uitex_gc_back_bl_y,
+  uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
+  uitex_gc_save_bl_x,     uitex_gc_save_bl_y
+};
+#define   gc_vertCount (4*gcid_count)  // 4 vertices per button
+float     gc_vertData[4*gc_vertCount]; // 4 floats per vertex, 16 per button
+uiElement gc_uiElems[gcid_count];
+
+bool gc_paused;
+bool gc_muted;
+bool gc_soloed;
+bool gc_moveBranch;
+bool gc_locked;
+
+
+void gc_onPlayPauseDn(void *data) {
+  puts("in gc_onPlayPauseDn");
+  if (gc_paused) {
+    gc_paused = false;
+  }
+  else {
+    gc_paused = true;
+  }
+}
+
+
+void initGc() {
+  glGenVertexArrays(1, &gc_vao);_glec
+  glBindVertexArray(gc_vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
-  golorolsRect_gu[0] = -butSide_gu*(glorolsButCount/2.0f);
-  golorolsRect_gu[1] = halfVideoSize_gu2[1] - butSide_gu;
-  golorolsRect_gu[2] =  butSide_gu*(glorolsButCount/2.0f);
-  golorolsRect_gu[3] = halfVideoSize_gu2[1];
+  gc_rect_gu[0] = -gc_butSide_gu*(gcid_count/2.0f);
+  gc_rect_gu[1] = halfVideoSize_gu2[1] - gc_butSide_gu;
+  gc_rect_gu[2] =  gc_butSide_gu*(gcid_count/2.0f);
+  gc_rect_gu[3] = halfVideoSize_gu2[1];
   
-  const int vertCount = 4*glorolsButCount;
-  const int elemCount = 6*glorolsButCount;
-  const float uitexButRect[2*glorolsButCount] = {
-    uitex_gc_play_bl_x,     uitex_gc_play_bl_y,
-    uitex_gc_step_bl_x,     uitex_gc_step_bl_y,
-    uitex_gc_unmuted_bl_x,  uitex_gc_unmuted_bl_y,
-    uitex_gc_unsoloed_bl_x, uitex_gc_unsoloed_bl_y,
-    uitex_gc_moveNode_bl_x, uitex_gc_moveNode_bl_y,
-    uitex_gc_unLock_bl_x,   uitex_gc_unLock_bl_y,
-    uitex_gc_up_bl_x,       uitex_gc_up_bl_y,
-    uitex_gc_top_bl_x,      uitex_gc_top_bl_y,
-    uitex_gc_back_bl_x,     uitex_gc_back_bl_y,
-    uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
-    uitex_gc_save_bl_x,     uitex_gc_save_bl_y
-  };
-  float vertRect[4] = {
-    golorolsRect_gu[0],              golorolsRect_gu[1], 
-    golorolsRect_gu[0] + butSide_gu, golorolsRect_gu[3]
-  };
-  uiVert verts[vertCount];
+  float butRect[4];
+  butRect[1] = gc_rect_gu[1];
+  butRect[3] = gc_rect_gu[3];
+  const int elemCount = 6*gcid_count;
   float texRect[4];
-  fr(b, glorolsButCount) {
-    texRect[0] = uitexButRect[2*b];
-    texRect[1] = uitexButRect[2*b + 1];
-    texRect[2] = uitexButRect[2*b]     + uitex_gc_buttonSide;
-    texRect[3] = uitexButRect[2*b + 1] + uitex_gc_buttonSide;
-    mapTexRectToVerts(&verts[4*b], vertRect, texRect);
-    vertRect[0] += butSide_gu;
-    vertRect[2] += butSide_gu;
+  fr(b, gcid_count) {
+    butRect[0] = gc_rect_gu[0] + gc_butSide_gu*b;
+    butRect[2] = gc_rect_gu[0] + gc_butSide_gu*(b+1);
+    texRect[0] = uitexButCorners_nt[2*b    ];
+    texRect[1] = uitexButCorners_nt[2*b + 1];
+    texRect[2] = uitexButCorners_nt[2*b    ] + uitex_gc_buttonSide;
+    texRect[3] = uitexButCorners_nt[2*b + 1] + uitex_gc_buttonSide;
+    mapTexRectToVerts(&gc_vertData[16*b], butRect, texRect);
+    gc_uiElems[b].verts     = &gc_vertData[16*b]; // wrong
+    gc_uiElems[b].onClickDn = doNothing;
+    gc_uiElems[b].onDrag    = doNothing;
+    gc_uiElems[b].onClickUp = doNothing;
   }
-  GLuint vbo;
-  glGenBuffers(1, &vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
-  glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);_glec
+  gc_uiElems[0].onClickDn = gc_onPlayPauseDn;
+  
+  
+  glGenBuffers(1, &gc_vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, gc_vbo);_glec
+  glBufferData(
+    GL_ARRAY_BUFFER, sizeof(gc_vertData), gc_vertData, GL_STATIC_DRAW
+  );_glec
   
   uint32_t elems[elemCount];
-  setRectElems(elems, glorolsButCount);
-  GLuint ebo;
-  glGenBuffers(1, &ebo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
+  setRectElems(elems, gcid_count);
+  glGenBuffers(1, &gc_ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gc_ebo);_glec
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW
   );_glec
@@ -298,7 +343,7 @@ void initRoot(float videoSize_px2[2]) {
   pln = &rootMod.p;
   initUiShader();
   initPlane();
-  initGlorols();
+  initGc();
 }
 
 bool pointIsInRect(const float point[2], const float rect[4]) {
@@ -307,6 +352,14 @@ bool pointIsInRect(const float point[2], const float rect[4]) {
     point[0] < rect[2] &&
     point[1] > rect[1] &&
     point[1] < rect[3]
+  ;
+}
+bool pointIsInVertRect(const float point[2], const float vertRect[16]) {
+  return 
+    point[0] > vertRect[0] &&
+    point[0] < vertRect[8] &&
+    point[1] > vertRect[1] &&
+    point[1] < vertRect[9]
   ;
 }
 
@@ -322,51 +375,51 @@ float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
 float oldScrollPos_gu2[2] = {0};
 float scrollVel_gu2[2]    = {0};
 
-typedef void (*cursEvenHandler)(void);
-void onDragScroll(void) {
+
+void onDragScroll(void *data) {
   fr(i,2) {newScrollPos_gu2[i] += newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
 }
-void onClickDnScroll(void) {
-  fr(i,2) {scrollVel_gu2[i] = 0;}
-}
-void onClickUpScroll(void) {
+void onClickUpScroll(void *data) {
   fr(i,2) {scrollVel_gu2[i] = newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
 }
-void doNothing(void) {}
-
-cursEvenHandler onClickDn = NULL;
-cursEvenHandler onDrag    = NULL;
-cursEvenHandler onClickUp = NULL;
 
 void clickDn(int posX_px, int posY_px) {
   posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
   newCursAbs_gu3[2] = 1.0f;
-  if (pointIsInRect(newCursAbs_gu3, golorolsRect_gu)) {
-    onDrag    = doNothing;
-    onClickDn = doNothing;
-    onClickUp = doNothing;
+  if (pointIsInRect(newCursAbs_gu3, gc_rect_gu)) {
+    fr(b,gcid_count) {
+      if (pointIsInVertRect(newCursAbs_gu3, gc_uiElems[b].verts)) {
+        onDrag    = gc_uiElems[b].onDrag;
+        onClickUp = gc_uiElems[b].onClickUp;
+        gc_uiElems[b].onClickDn(NULL);
+        break;
+      }
+    }
   }
   else {
+    fr(i,2) {scrollVel_gu2[i] = 0;}
     onDrag    = onDragScroll;
-    onClickDn = onClickDnScroll;
     onClickUp = onClickUpScroll;
   }
-  onClickDn();
 }
 void curMove(int posX_px, int posY_px) {
   posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
-  if (newCursAbs_gu3[2]) onDrag();
+  if (newCursAbs_gu3[2]) onDrag(NULL);
 }
 void clickUp(int posX_px, int posY_px) {
   posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
   newCursAbs_gu3[2] = 0;
-  onClickUp();
+  onClickUp(NULL);
 }
+
+
+
+
 
 
 float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
 bool redrawPlane   = true;
-bool redrawGlorols = true;
+bool redrawGc = true;
 
 void perFrame() {
   fr(i,2) {newScrollPos_gu2[i] += scrollVel_gu2[i];}
@@ -376,28 +429,28 @@ void perFrame() {
     screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
     screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
     fr(i,2) {
-      if (screenCrnrs_gu4[i] < pln->corners_gu4[i]) {
-        newScrollPos_gu2[i] = pln->corners_gu4[i]+halfVideoSize_gu2[i];
+      if (screenCrnrs_gu4[i] < pln->rect_gu[i]) {
+        newScrollPos_gu2[i] = pln->rect_gu[i]+halfVideoSize_gu2[i];
         scrollVel_gu2[i] = 0;
       }
-      else if (screenCrnrs_gu4[i+2] > pln->corners_gu4[i+2]) {
-        newScrollPos_gu2[i] = pln->corners_gu4[i+2]-halfVideoSize_gu2[i];
+      else if (screenCrnrs_gu4[i+2] > pln->rect_gu[i+2]) {
+        newScrollPos_gu2[i] = pln->rect_gu[i+2]-halfVideoSize_gu2[i];
         scrollVel_gu2[i] = 0;
       }
     }
     redrawPlane = true;
   }
-  if (redrawPlane || redrawGlorols) {
+  if (redrawPlane || redrawGc) {
     if (redrawPlane) {
       glBindVertexArray(pln->vao);_glec
       glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
       glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);_glec
       redrawPlane = false;
     }
-    glBindVertexArray(glorolsVao);_glec
+    glBindVertexArray(gc_vao);_glec
     glUniform2f(unif_scroll, 0, 0);_glec
-    glDrawElements(GL_TRIANGLES, 6*glorolsButCount, GL_UNSIGNED_INT, 0);_glec
-    redrawGlorols = false;
+    glDrawElements(GL_TRIANGLES, 6*gcid_count, GL_UNSIGNED_INT, 0);_glec
+    redrawGc = false;
   }
   fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
   fr(i,2) {oldScrollPos_gu2[i] = newScrollPos_gu2[i];}
