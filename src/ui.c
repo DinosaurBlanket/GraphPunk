@@ -14,7 +14,7 @@
 
 typedef struct {
   float    rect_gu[4];
-  //float    pos_gudc2[2]; // "newScrollPos_gu2"
+  //float    pos_gudc2[2]; // "newScroll_gu2"
   GLuint   vao;
   GLuint   vbo;
   GLuint   ebo;
@@ -369,26 +369,32 @@ void posPxToPosGu(float pos_gu[2], const int posX_px, const int posY_px) {
 }
 
 
-float newCursAbs_gu3[3]   = {0}; // cursor state relative to screen
-float oldCursAbs_gu3[3]   = {0};
-float newScrollPos_gu2[2] = {0}; // plane center to screen center difference
-float oldScrollPos_gu2[2] = {0};
-float scrollVel_gu2[2]    = {0};
+float newCurs_gu3[3]       = {0}; // cursor state relative to screen
+float oldCurs_gu3[3]       = {0};
+float clickDnCurs_gu3[3]   = {0};
+float newScroll_gu2[2]     = {0}; // plane center to screen center difference
+float oldScroll_gu2[2]     = {0};
+float clickDnScroll_gu2[2] = {0};
+float scrollVel_gu2[2]     = {0};
 
 
 void onDragScroll(void *data) {
-  fr(i,2) {newScrollPos_gu2[i] += newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
+  fr(i,2) {
+    newScroll_gu2[i] = clickDnScroll_gu2[i]-(clickDnCurs_gu3[i]-newCurs_gu3[i]);
+  }
 }
 void onClickUpScroll(void *data) {
-  fr(i,2) {scrollVel_gu2[i] = newCursAbs_gu3[i] - oldCursAbs_gu3[i];}
+  fr(i,2) {scrollVel_gu2[i] = newCurs_gu3[i] - oldCurs_gu3[i];}
 }
 
 void clickDn(int posX_px, int posY_px) {
-  posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
-  newCursAbs_gu3[2] = 1.0f;
-  if (pointIsInRect(newCursAbs_gu3, gc_rect_gu)) {
+  posPxToPosGu(newCurs_gu3, posX_px, posY_px);
+  newCurs_gu3[2] = 1.0f;
+  fr(i,3) {clickDnCurs_gu3[i] = newCurs_gu3[i];}
+  fr(i,2) {clickDnScroll_gu2[i] = newScroll_gu2[i];}
+  if (pointIsInRect(newCurs_gu3, gc_rect_gu)) {
     fr(b,gcid_count) {
-      if (pointIsInVertRect(newCursAbs_gu3, gc_uiElems[b].verts)) {
+      if (pointIsInVertRect(newCurs_gu3, gc_uiElems[b].verts)) {
         onDrag    = gc_uiElems[b].onDrag;
         onClickUp = gc_uiElems[b].onClickUp;
         gc_uiElems[b].onClickDn(NULL);
@@ -403,12 +409,12 @@ void clickDn(int posX_px, int posY_px) {
   }
 }
 void curMove(int posX_px, int posY_px) {
-  posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
-  if (newCursAbs_gu3[2]) onDrag(NULL);
+  posPxToPosGu(newCurs_gu3, posX_px, posY_px);
+  if (newCurs_gu3[2]) onDrag(NULL);
 }
 void clickUp(int posX_px, int posY_px) {
-  posPxToPosGu(newCursAbs_gu3, posX_px, posY_px);
-  newCursAbs_gu3[2] = 0;
+  posPxToPosGu(newCurs_gu3, posX_px, posY_px);
+  newCurs_gu3[2] = 0;
   onClickUp(NULL);
 }
 
@@ -422,19 +428,19 @@ bool redrawPlane   = true;
 bool redrawGc = true;
 
 void perFrame() {
-  fr(i,2) {newScrollPos_gu2[i] += scrollVel_gu2[i];}
-  if (!allEq(newScrollPos_gu2, oldScrollPos_gu2, 2)) {
-    screenCrnrs_gu4[0] = newScrollPos_gu2[0]-halfVideoSize_gu2[0];
-    screenCrnrs_gu4[1] = newScrollPos_gu2[1]-halfVideoSize_gu2[1];
-    screenCrnrs_gu4[2] = newScrollPos_gu2[0]+halfVideoSize_gu2[0];
-    screenCrnrs_gu4[3] = newScrollPos_gu2[1]+halfVideoSize_gu2[1];
+  fr(i,2) {newScroll_gu2[i] += scrollVel_gu2[i];}
+  if (!allEq(newScroll_gu2, oldScroll_gu2, 2)) {
+    screenCrnrs_gu4[0] = newScroll_gu2[0]-halfVideoSize_gu2[0];
+    screenCrnrs_gu4[1] = newScroll_gu2[1]-halfVideoSize_gu2[1];
+    screenCrnrs_gu4[2] = newScroll_gu2[0]+halfVideoSize_gu2[0];
+    screenCrnrs_gu4[3] = newScroll_gu2[1]+halfVideoSize_gu2[1];
     fr(i,2) {
       if (screenCrnrs_gu4[i] < pln->rect_gu[i]) {
-        newScrollPos_gu2[i] = pln->rect_gu[i]+halfVideoSize_gu2[i];
+        newScroll_gu2[i] = pln->rect_gu[i]+halfVideoSize_gu2[i];
         scrollVel_gu2[i] = 0;
       }
       else if (screenCrnrs_gu4[i+2] > pln->rect_gu[i+2]) {
-        newScrollPos_gu2[i] = pln->rect_gu[i+2]-halfVideoSize_gu2[i];
+        newScroll_gu2[i] = pln->rect_gu[i+2]-halfVideoSize_gu2[i];
         scrollVel_gu2[i] = 0;
       }
     }
@@ -443,7 +449,7 @@ void perFrame() {
   if (redrawPlane || redrawGc) {
     if (redrawPlane) {
       glBindVertexArray(pln->vao);_glec
-      glUniform2f(unif_scroll, newScrollPos_gu2[0], newScrollPos_gu2[1]);_glec
+      glUniform2f(unif_scroll, newScroll_gu2[0], newScroll_gu2[1]);_glec
       glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);_glec
       redrawPlane = false;
     }
@@ -452,6 +458,6 @@ void perFrame() {
     glDrawElements(GL_TRIANGLES, 6*gcid_count, GL_UNSIGNED_INT, 0);_glec
     redrawGc = false;
   }
-  fr(i,3) {oldCursAbs_gu3[i] = newCursAbs_gu3[i];}
-  fr(i,2) {oldScrollPos_gu2[i] = newScrollPos_gu2[i];}
+  fr(i,3) {oldCurs_gu3[i] = newCurs_gu3[i];}
+  fr(i,2) {oldScroll_gu2[i] = newScroll_gu2[i];}
 }
