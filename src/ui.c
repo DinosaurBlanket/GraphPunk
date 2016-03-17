@@ -212,6 +212,7 @@ void initPlane() {
   setUiVertAttribs(uiShader);
 }
 
+
 void setRectElems(uint32_t *elems, const uint32_t rectCount) {
   uint32_t v = 0;
   uint32_t e = 0;
@@ -225,11 +226,8 @@ void setRectElems(uint32_t *elems, const uint32_t rectCount) {
   }
 }
 
-
-
 typedef void (*cursEventHandler)(void *data);
 
-//cursEventHandler onClickDn = NULL;
 cursEventHandler onDrag    = NULL;
 cursEventHandler onClickUp = NULL;
 
@@ -274,16 +272,32 @@ bool gc_muted;
 bool gc_soloed;
 bool gc_moveBranch;
 bool gc_locked;
-
+bool redrawPlane = true;
+bool redrawGc    = true;
 
 void gc_onPlayPauseDn(void *data) {
   puts("in gc_onPlayPauseDn");
   if (gc_paused) {
     gc_paused = false;
+    // x  y  s  T  x  y  s  T  x  y  s  T  x  y  s  T
+    // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+    gc_vertData[16*gcid_play +  3] = uitex_gc_play_bl_y;
+    gc_vertData[16*gcid_play +  7] = uitex_gc_play_bl_y + uitex_gc_buttonSide;
+    gc_vertData[16*gcid_play + 11] = uitex_gc_play_bl_y + uitex_gc_buttonSide;
+    gc_vertData[16*gcid_play + 15] = uitex_gc_play_bl_y;
   }
   else {
     gc_paused = true;
+    gc_vertData[16*gcid_play +  3] = uitex_gc_play_bl_y +   uitex_gc_buttonSide;
+    gc_vertData[16*gcid_play +  7] = uitex_gc_play_bl_y + 2*uitex_gc_buttonSide;
+    gc_vertData[16*gcid_play + 11] = uitex_gc_play_bl_y + 2*uitex_gc_buttonSide;
+    gc_vertData[16*gcid_play + 15] = uitex_gc_play_bl_y +   uitex_gc_buttonSide;
   }
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER, 16*gcid_play*sizeof(float), 16*sizeof(float), gc_vertData
+  );_glec
+  redrawGc = true;
 }
 
 
@@ -420,12 +434,7 @@ void clickUp(int posX_px, int posY_px) {
 
 
 
-
-
-
 float screenCrnrs_gu4[4]  = {0}; // xyxy, bl tr, relative to plane center
-bool redrawPlane   = true;
-bool redrawGc = true;
 
 void perFrame() {
   fr(i,2) {newScroll_gu2[i] += scrollVel_gu2[i];}
