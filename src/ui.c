@@ -40,10 +40,15 @@ bool allEq(const float *l, const float *r, int c) {
 void printVerts(const float *vertData, int vertCount) {
   fr(i,vertCount) {
     printf(
-      "%2i: vert pos, gu: %4.2f, %4.2f  -  tex pos, nt: %6.5f, %6.5f\n",
+      "%2i: vert pos, gu: % 6.2f, % 6.2f  -  tex pos, nt: % 6.5f, % 6.5f\n",
       i, vertData[4*i], vertData[4*i + 1], vertData[4*i + 2], vertData[4*i + 3]
     );
   }
+}
+void printGlVerts(int vertCount) {
+  float *data = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+  printVerts(data, vertCount);
+  glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
 void mapTexRectToVerts(
@@ -228,10 +233,10 @@ void setRectElems(uint32_t *elems, const uint32_t rectCount) {
 
 typedef void (*cursEventHandler)(void *data);
 
-cursEventHandler onDrag    = NULL;
-cursEventHandler onClickUp = NULL;
-
 void doNothing(void *data) {}
+cursEventHandler onDrag    = doNothing;
+cursEventHandler onClickUp = doNothing;
+
 
 typedef struct {
   float           *verts; // will likely be part of a larger array
@@ -275,30 +280,179 @@ bool gc_locked;
 bool redrawPlane = true;
 bool redrawGc    = true;
 
+
+void shiftTex(float *vertData, float texBlY, float hight) {
+  vertData[ 3] = texBlY +   hight;
+  vertData[ 7] = texBlY + 2*hight;
+  vertData[11] = texBlY + 2*hight;
+  vertData[15] = texBlY +   hight;
+}
+void unshiftTex(float *vertData, float texBlY, float hight) {
+  vertData[ 3] = texBlY;
+  vertData[ 7] = texBlY + hight;
+  vertData[11] = texBlY + hight;
+  vertData[15] = texBlY;
+}
+
 void gc_onPlayPauseDn(void *data) {
-  puts("in gc_onPlayPauseDn");
   if (gc_paused) {
     gc_paused = false;
-    // x  y  s  T  x  y  s  T  x  y  s  T  x  y  s  T
-    // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-    gc_vertData[16*gcid_play +  3] = uitex_gc_play_bl_y;
-    gc_vertData[16*gcid_play +  7] = uitex_gc_play_bl_y + uitex_gc_buttonSide;
-    gc_vertData[16*gcid_play + 11] = uitex_gc_play_bl_y + uitex_gc_buttonSide;
-    gc_vertData[16*gcid_play + 15] = uitex_gc_play_bl_y;
+    unshiftTex(
+      &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
+    );
   }
   else {
     gc_paused = true;
-    gc_vertData[16*gcid_play +  3] = uitex_gc_play_bl_y +   uitex_gc_buttonSide;
-    gc_vertData[16*gcid_play +  7] = uitex_gc_play_bl_y + 2*uitex_gc_buttonSide;
-    gc_vertData[16*gcid_play + 11] = uitex_gc_play_bl_y + 2*uitex_gc_buttonSide;
-    gc_vertData[16*gcid_play + 15] = uitex_gc_play_bl_y +   uitex_gc_buttonSide;
+    shiftTex(
+      &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
+    );
   }
   glBindVertexArray(gc_vao);_glec
   glBufferSubData(
-    GL_ARRAY_BUFFER, 16*gcid_play*sizeof(float), 16*sizeof(float), gc_vertData
+    GL_ARRAY_BUFFER,
+    16*gcid_play*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_play]
   );_glec
   redrawGc = true;
 }
+void gc_onMuteDn(void *data) {
+  if (gc_muted) {
+    gc_muted = false;
+    unshiftTex(
+      &gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide
+    );
+  }
+  else {
+    gc_muted = true;
+    shiftTex(
+      &gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide
+    );
+  }
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_mute*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_mute]
+  );_glec
+  redrawGc = true;
+}
+void gc_onSoloDn(void *data) {
+  if (gc_soloed) {
+    gc_soloed = false;
+    unshiftTex(
+      &gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide
+    );
+  }
+  else {
+    gc_soloed = true;
+    shiftTex(
+      &gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide
+    );
+  }
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_solo*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_solo]
+  );_glec
+  redrawGc = true;
+}
+void gc_onMoveBranchDn(void *data) {
+  if (gc_moveBranch) {
+    gc_moveBranch = false;
+    unshiftTex(
+      &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
+    );
+  }
+  else {
+    gc_moveBranch = true;
+    shiftTex(
+      &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
+    );
+  }
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_mvBr*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_mvBr]
+  );_glec
+  redrawGc = true;
+}
+void gc_onLockDn(void *data) {
+  if (gc_locked) {
+    gc_locked = false;
+    unshiftTex(
+      &gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
+    );
+  }
+  else {
+    gc_locked = true;
+    shiftTex(
+      &gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
+    );
+  }
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_lock*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_lock]
+  );_glec
+  redrawGc = true;
+}
+void gc_onSaveDn(void *data) {
+  shiftTex(
+    &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
+  );
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_save*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_save]
+  );_glec
+  redrawGc = true;
+}
+void gc_onSaveUp(void *data) {
+  unshiftTex(
+    &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
+  );
+  glBindVertexArray(gc_vao);_glec
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    16*gcid_save*sizeof(float),
+    16*sizeof(float),
+    &gc_vertData[16*gcid_save]
+  );_glec
+  redrawGc = true;
+}
+
+cursEventHandler gc_onClickDns[gcid_count] = {
+  gc_onPlayPauseDn,
+  doNothing,
+  gc_onMuteDn,
+  gc_onSoloDn,
+  gc_onMoveBranchDn,
+  gc_onLockDn,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  gc_onSaveDn
+};
+cursEventHandler gc_onDrags[gcid_count] = {
+  doNothing,doNothing,doNothing,doNothing,doNothing,doNothing,
+  doNothing,doNothing,doNothing,doNothing,doNothing
+};
+cursEventHandler gc_onClickUps[gcid_count] = {
+  doNothing,doNothing,doNothing,doNothing,doNothing,doNothing,
+  doNothing,doNothing,doNothing,doNothing,gc_onSaveUp
+};
+
 
 
 void initGc() {
@@ -325,13 +479,11 @@ void initGc() {
     texRect[2] = uitexButCorners_nt[2*b    ] + uitex_gc_buttonSide;
     texRect[3] = uitexButCorners_nt[2*b + 1] + uitex_gc_buttonSide;
     mapTexRectToVerts(&gc_vertData[16*b], butRect, texRect);
-    gc_uiElems[b].verts     = &gc_vertData[16*b]; // wrong
-    gc_uiElems[b].onClickDn = doNothing;
-    gc_uiElems[b].onDrag    = doNothing;
-    gc_uiElems[b].onClickUp = doNothing;
+    gc_uiElems[b].verts     = &gc_vertData[16*b];
+    gc_uiElems[b].onClickDn = gc_onClickDns[b];
+    gc_uiElems[b].onDrag    = gc_onDrags[b];
+    gc_uiElems[b].onClickUp = gc_onClickUps[b];
   }
-  gc_uiElems[0].onClickDn = gc_onPlayPauseDn;
-  
   
   glGenBuffers(1, &gc_vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, gc_vbo);_glec
