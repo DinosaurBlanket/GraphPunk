@@ -13,18 +13,29 @@
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
 
 typedef struct {
-  float    rect_gu[4];
-  //float    pos_gudc2[2]; // "newScroll_gu2"
-  GLuint   vao;
-  GLuint   vbo;
-  GLuint   ebo;
-  uint32_t lineCount;
-  uint32_t lineCap;
-  uint32_t nodeCount;
-  uint32_t nodeCap;
-  //int    depth; // in module tree
+  float     rect_gu[4];
+  float     pos_gudc2[2]; // only used when changing planes
+  GLuint    vao;
+  GLuint    vbo;
+  GLuint    ebo;
+  float    *vertData;
+  uint32_t *elemData;
+  uint32_t  lineVertSize; // in elements (floats)
+  uint32_t  lineVertCap;  // in elements (floats)
+  uint32_t  nodeVertSize; // in elements (ints)
+  uint32_t  nodeVertCap;  // in elements (ints)
   //vinode *vinodes; // vinodes keep track of their data location in vao
 } plane;
+// first verts of every plane are for background
+#define backVertsSize 48 // in elements, 12 vertices, 48 floats
+#define backElemsSize 36 // in elements (ints)
+uint32_t planeVertDataSize(plane *p) {
+  return (backVertsSize + p->lineVertCap + p->nodeVertCap)*sizeof(float);
+}
+uint32_t planeElemDataSize(plane *p) {
+  return (backElemsSize + 3*((p->lineVertCap + p->nodeVertCap)/2))*sizeof(uint32_t);
+}
+// Module faces are drawn separately
 
 typedef struct {
   plane p;
@@ -44,11 +55,6 @@ void printVerts(const float *vertData, int vertCount) {
       i, vertData[4*i], vertData[4*i + 1], vertData[4*i + 2], vertData[4*i + 3]
     );
   }
-}
-void printGlVerts(int vertCount) {
-  float *data = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
-  printVerts(data, vertCount);
-  glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
 void mapTexRectToVerts(
@@ -90,7 +96,7 @@ void resetPlaneRect() {
   pln->rect_gu[1] = floor(-halfVideoSize_gu2[1] - planePadding_gu); // tl
   pln->rect_gu[2] = ceil ( halfVideoSize_gu2[0] + planePadding_gu); // tr
   pln->rect_gu[3] = ceil ( halfVideoSize_gu2[1] + planePadding_gu); // br
-  float backVertData[32] = {
+  const float backVertData[32] = {
     // inside border
     // bl
     pln->rect_gu[0]+1, pln->rect_gu[1]+1, 
@@ -119,9 +125,7 @@ void resetPlaneRect() {
     pln->rect_gu[2], pln->rect_gu[1], 
     uitex_obord_br_x, uitex_obord_br_y,
   };
-  
-  glBindVertexArray(pln->vao);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backVertData), backVertData);_glec
+  fr(i,32) {pln->vertData[i] = backVertData[i];}
 }
 
 GLuint uiShader;
@@ -163,9 +167,19 @@ void setUiVertAttribs() {
   );_glec
 }
 
-// first verts of every plane are for background
-#define lineVertOffset 48 // 12 vertices, 48 floats
-#define lineElemOffset 36
+void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
+  uint32_t v = 0;
+  uint32_t e = 0;
+  for (; e < elemsSize; v += 4, e += 6) {
+    elems[e  ] = v;
+    elems[e+1] = v+1;
+    elems[e+2] = v+3;
+    elems[e+3] = v+1;
+    elems[e+4] = v+2;
+    elems[e+5] = v+3;
+  }
+}
+
 
 void initPlane() {
   glGenVertexArrays(1, &pln->vao);_glec
@@ -173,14 +187,44 @@ void initPlane() {
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
+  pln->lineVertSize =   0;
+  pln->nodeVertSize =   0;
+  pln->lineVertCap  = 120; // arbitrary
+  pln->nodeVertCap  =  60; // arbitrary
+  pln->pos_gudc2[0] =   0;
+  pln->pos_gudc2[1] =   0;
+  
   glGenBuffers(1, &pln->vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER,         pln->vbo);_glec
-  glBufferData(
-    GL_ARRAY_BUFFER,               // GLenum        target
-    lineVertOffset*sizeof(float),  // GLsizeiptr    size
-    0,                             // const GLvoid *data
-    GL_STATIC_DRAW                 // GLenum        usage​
+  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
+  GLbitfield bufferStorageFlags = 
+    GL_MAP_WRITE_BIT      | 
+    GL_MAP_PERSISTENT_BIT | 
+    GL_MAP_COHERENT_BIT
+  ;
+  uint32_t bufSize = planeVertDataSize(pln);
+  glBufferStorage(
+    GL_ARRAY_BUFFER,    // GLenum        target
+    bufSize,            // GLsizeiptr    size​
+    0,                  // const GLvoid *data​
+    bufferStorageFlags  // GLbitfield    flags​
   );_glec
+  pln->vertData = glMapBufferRange(
+    GL_ARRAY_BUFFER,    // GLenum     target​
+    0,                  // GLintptr   offset​
+    bufSize,            // GLsizeiptr length​
+    bufferStorageFlags  // GLbitfield access
+  );_glec
+  
+  glGenBuffers(1, &pln->ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
+  bufSize = planeElemDataSize(pln);
+  glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
+  pln->elemData = glMapBufferRange(
+    GL_ELEMENT_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags
+  );_glec
+  
+  
   // the first 8 verts are set by this function
   resetPlaneRect(pln, halfVideoSize_gu2);
   // the next 4 are set below
@@ -190,16 +234,12 @@ void initPlane() {
     uitex_cntr_bl_x, uitex_cntr_bl_y, uitex_cntr_tr_x, uitex_cntr_tr_y
   };
   mapTexRectToVerts(centerVerts, centerVertsRect_gu, centerTexRect_nt);
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    32*sizeof(float),
-    sizeof(centerVerts),
-    centerVerts
-  );_glec
+  for (int i = backVertsSize-16; i < backVertsSize; i++) {
+    pln->vertData[i] = centerVerts[i-(backVertsSize-16)];
+  }
   
-  glGenBuffers(1, &pln->ebo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
-  uint32_t backInd[] = {
+  // element data
+  const uint32_t backElems[backElemsSize] = {
     // inside border
     0,1,3, 1,2,3,
     // outside border
@@ -207,29 +247,12 @@ void initPlane() {
     // center marker
     8,9,11, 9,10,11
   };
-  glBufferData(
-    GL_ELEMENT_ARRAY_BUFFER,
-    sizeof(backInd),
-    backInd,
-    GL_STATIC_DRAW
-  );_glec
+  fr(i,backElemsSize) {pln->elemData[i] = backElems[i];}
+  setRectElems(&pln->elemData[backElemsSize], bufSize/sizeof(float));
   
   setUiVertAttribs(uiShader);
 }
 
-
-void setRectElems(uint32_t *elems, const uint32_t rectCount) {
-  uint32_t v = 0;
-  uint32_t e = 0;
-  for (; v < 4*rectCount; v += 4, e += 6) {
-    elems[e  ] = v;
-    elems[e+1] = v+1;
-    elems[e+2] = v+3;
-    elems[e+3] = v+1;
-    elems[e+4] = v+2;
-    elems[e+5] = v+3;
-  }
-}
 
 typedef void (*cursEventHandler)(void *data);
 
@@ -492,7 +515,7 @@ void initGc() {
   );_glec
   
   uint32_t elems[elemCount];
-  setRectElems(elems, gcid_count);
+  setRectElems(elems, 6*gcid_count);
   glGenBuffers(1, &gc_ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gc_ebo);_glec
   glBufferData(
@@ -611,7 +634,7 @@ void perFrame() {
     if (redrawPlane) {
       glBindVertexArray(pln->vao);_glec
       glUniform2f(unif_scroll, newScroll_gu2[0], newScroll_gu2[1]);_glec
-      glDrawElements(GL_TRIANGLES, lineElemOffset, GL_UNSIGNED_INT, 0);_glec
+      glDrawElements(GL_TRIANGLES, backElemsSize, GL_UNSIGNED_INT, 0);_glec
       redrawPlane = false;
     }
     glBindVertexArray(gc_vao);_glec
