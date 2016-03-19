@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
     );
     #endif
     
+    glFinish();
 		SDL_GL_SwapWindow(window);_sdlec
     curFrame++;
 	}

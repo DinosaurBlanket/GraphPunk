@@ -20,20 +20,20 @@ typedef struct {
   GLuint    ebo;
   float    *vertData;
   uint32_t *elemData;
-  uint32_t  lineVertSize; // in elements (floats)
-  uint32_t  lineVertCap;  // in elements (floats)
-  uint32_t  nodeVertSize; // in elements (ints)
-  uint32_t  nodeVertCap;  // in elements (ints)
+  uint32_t  lineVertsSize; // in elements (floats)
+  uint32_t  lineVertsCap;  // in elements (floats)
+  uint32_t  nodeVertsSize; // in elements (ints)
+  uint32_t  nodeVertsCap;  // in elements (ints)
   //vinode *vinodes; // vinodes keep track of their data location in vao
 } plane;
 // first verts of every plane are for background
 #define backVertsSize 48 // in elements, 12 vertices, 48 floats
 #define backElemsSize 36 // in elements (ints)
 uint32_t planeVertDataSize(plane *p) {
-  return (backVertsSize + p->lineVertCap + p->nodeVertCap)*sizeof(float);
+  return (backVertsSize + p->lineVertsCap + p->nodeVertsCap)*sizeof(float);
 }
 uint32_t planeElemDataSize(plane *p) {
-  return (backElemsSize + 3*((p->lineVertCap + p->nodeVertCap)/2))*sizeof(uint32_t);
+  return (backElemsSize + 3*((p->lineVertsCap + p->nodeVertsCap)/2))*sizeof(uint32_t);
 }
 // Module faces are drawn separately
 
@@ -180,17 +180,16 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
   }
 }
 
-
 void initPlane() {
   glGenVertexArrays(1, &pln->vao);_glec
   glBindVertexArray(pln->vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
-  pln->lineVertSize =   0;
-  pln->nodeVertSize =   0;
-  pln->lineVertCap  = 120; // arbitrary
-  pln->nodeVertCap  =  60; // arbitrary
+  pln->lineVertsSize =   0;
+  pln->nodeVertsSize =   0;
+  pln->lineVertsCap  = 120; // arbitrary
+  pln->nodeVertsCap  =  60; // arbitrary
   pln->pos_gudc2[0] =   0;
   pln->pos_gudc2[1] =   0;
   
@@ -269,9 +268,6 @@ typedef struct {
 } uiElement;
 
 
-GLuint gc_vao;
-GLuint gc_vbo;
-GLuint gc_ebo;
 const float gc_butSide_gu = 2;
 float  gc_rect_gu[4];
 typedef enum {
@@ -291,15 +287,21 @@ const float uitexButCorners_nt[2*gcid_count] = {
   uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
   uitex_gc_save_bl_x,     uitex_gc_save_bl_y
 };
-#define   gc_vertCount (4*gcid_count)  // 4 vertices per button
-float     gc_vertData[4*gc_vertCount]; // 4 floats per vertex, 16 per button
+#define   gc_vertsSize (16*gcid_count) // in elements
+#define   gc_elemsSize ( 6*gcid_count) // in elements
+GLuint    gc_vao = 0;
+GLuint    gc_vbo = 0;
+GLuint    gc_ebo = 0;
+float    *gc_vertData = NULL;
+uint32_t *gc_elemData = NULL;
 uiElement gc_uiElems[gcid_count];
 
-bool gc_paused;
-bool gc_muted;
-bool gc_soloed;
-bool gc_moveBranch;
-bool gc_locked;
+bool gc_paused = true;
+bool gc_muted  = false;
+bool gc_soloed = false;
+bool gc_mvBr   = false;
+bool gc_locked = false;
+
 bool redrawPlane = true;
 bool redrawGc    = true;
 
@@ -320,23 +322,16 @@ void unshiftTex(float *vertData, float texBlY, float hight) {
 void gc_onPlayPauseDn(void *data) {
   if (gc_paused) {
     gc_paused = false;
-    unshiftTex(
+    shiftTex(
       &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
     );
   }
   else {
     gc_paused = true;
-    shiftTex(
+    unshiftTex(
       &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
     );
   }
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_play*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_play]
-  );_glec
   redrawGc = true;
 }
 void gc_onMuteDn(void *data) {
@@ -352,13 +347,6 @@ void gc_onMuteDn(void *data) {
       &gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide
     );
   }
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_mute*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_mute]
-  );_glec
   redrawGc = true;
 }
 void gc_onSoloDn(void *data) {
@@ -374,35 +362,21 @@ void gc_onSoloDn(void *data) {
       &gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide
     );
   }
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_solo*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_solo]
-  );_glec
   redrawGc = true;
 }
 void gc_onMoveBranchDn(void *data) {
-  if (gc_moveBranch) {
-    gc_moveBranch = false;
+  if (gc_mvBr) {
+    gc_mvBr = false;
     unshiftTex(
       &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
     );
   }
   else {
-    gc_moveBranch = true;
+    gc_mvBr = true;
     shiftTex(
       &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
     );
   }
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_mvBr*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_mvBr]
-  );_glec
   redrawGc = true;
 }
 void gc_onLockDn(void *data) {
@@ -418,39 +392,18 @@ void gc_onLockDn(void *data) {
       &gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
     );
   }
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_lock*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_lock]
-  );_glec
   redrawGc = true;
 }
 void gc_onSaveDn(void *data) {
   shiftTex(
     &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
   );
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_save*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_save]
-  );_glec
   redrawGc = true;
 }
 void gc_onSaveUp(void *data) {
   unshiftTex(
     &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
   );
-  glBindVertexArray(gc_vao);_glec
-  glBufferSubData(
-    GL_ARRAY_BUFFER,
-    16*gcid_save*sizeof(float),
-    16*sizeof(float),
-    &gc_vertData[16*gcid_save]
-  );_glec
   redrawGc = true;
 }
 
@@ -477,12 +430,31 @@ cursEventHandler gc_onClickUps[gcid_count] = {
 };
 
 
-
 void initGc() {
   glGenVertexArrays(1, &gc_vao);_glec
   glBindVertexArray(gc_vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
+  
+  glGenBuffers(1, &gc_vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, gc_vbo);_glec
+  GLbitfield bufferStorageFlags = 
+    GL_MAP_WRITE_BIT      | 
+    GL_MAP_PERSISTENT_BIT | 
+    GL_MAP_COHERENT_BIT
+  ;
+  glBufferStorage(
+    GL_ARRAY_BUFFER,
+    gc_vertsSize*sizeof(float),
+    0,
+    bufferStorageFlags
+  );_glec
+  gc_vertData = glMapBufferRange(
+    GL_ARRAY_BUFFER,
+    0,
+    gc_vertsSize*sizeof(float),
+    bufferStorageFlags
+  );_glec
   
   gc_rect_gu[0] = -gc_butSide_gu*(gcid_count/2.0f);
   gc_rect_gu[1] = halfVideoSize_gu2[1] - gc_butSide_gu;
@@ -492,7 +464,6 @@ void initGc() {
   float butRect[4];
   butRect[1] = gc_rect_gu[1];
   butRect[3] = gc_rect_gu[3];
-  const int elemCount = 6*gcid_count;
   float texRect[4];
   fr(b, gcid_count) {
     butRect[0] = gc_rect_gu[0] + gc_butSide_gu*b;
@@ -508,19 +479,21 @@ void initGc() {
     gc_uiElems[b].onClickUp = gc_onClickUps[b];
   }
   
-  glGenBuffers(1, &gc_vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, gc_vbo);_glec
-  glBufferData(
-    GL_ARRAY_BUFFER, sizeof(gc_vertData), gc_vertData, GL_STATIC_DRAW
-  );_glec
-  
-  uint32_t elems[elemCount];
-  setRectElems(elems, 6*gcid_count);
   glGenBuffers(1, &gc_ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gc_ebo);_glec
-  glBufferData(
-    GL_ELEMENT_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW
+  glBufferStorage(
+    GL_ELEMENT_ARRAY_BUFFER,
+    gc_elemsSize*sizeof(uint32_t),
+    0,
+    bufferStorageFlags
   );_glec
+  gc_elemData = glMapBufferRange(
+    GL_ELEMENT_ARRAY_BUFFER,
+    0,
+    gc_elemsSize*sizeof(uint32_t),
+    bufferStorageFlags
+  );_glec
+  setRectElems(gc_elemData, 6*gcid_count);
   
   setUiVertAttribs(uiShader);
 }
