@@ -12,6 +12,24 @@
 
 #define fr(i, bound) for (int i = 0; i < (bound); i++)
 
+typedef void (*cursEventHandler)(void *data);
+typedef struct {
+  float           *verts; // will likely be part of a larger array
+  cursEventHandler onClickDn;
+  cursEventHandler onDrag;
+  cursEventHandler onClickUp;
+} uiElement;
+
+typedef struct {
+  uiElement     *uie; // one for node face, one for each port
+  struct vinode *oputs;
+  struct vinode *iputs;
+  uint32_t       oputCount;
+  uint32_t       iputCount;
+  //dtype         *iputTypes;
+  //dtype         *oputTypes;
+} vinode;
+
 typedef struct {
   float     rect_gu[4];
   float     pos_gudc2[2]; // only used when changing planes
@@ -22,9 +40,10 @@ typedef struct {
   uint32_t *elemData;
   uint32_t  lineVertsSize; // in elements (floats)
   uint32_t  lineVertsCap;  // in elements (floats)
-  uint32_t  nodeVertsSize; // in elements (ints)
-  uint32_t  nodeVertsCap;  // in elements (ints)
-  //vinode *vinodes; // vinodes keep track of their data location in vao
+  uint32_t  nodeVertsSize; // in elements (ints), ports along with node faces
+  uint32_t  nodeVertsCap;  // in elements (ints), ports along with node faces
+  vinode   *vinodes;
+  uint32_t  vinodeCount;
 } plane;
 // first verts of every plane are for background
 #define backVertsSize 48 // in elements, 12 vertices, 48 floats
@@ -253,19 +272,11 @@ void initPlane() {
 }
 
 
-typedef void (*cursEventHandler)(void *data);
 
 void doNothing(void *data) {}
 cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
 
-
-typedef struct {
-  float           *verts; // will likely be part of a larger array
-  cursEventHandler onClickDn;
-  cursEventHandler onDrag;
-  cursEventHandler onClickUp;
-} uiElement;
 
 
 const float gc_butSide_gu = 2;
