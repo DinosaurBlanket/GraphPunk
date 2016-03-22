@@ -33,26 +33,16 @@
 #define uitex_gc_buttonSide       (uitex_guSize_nt*2.0f)
 #define uitex_gc_play_bl_x        (32.0f/uitex_size_x)
 #define uitex_gc_play_bl_y          0.0f
-#define uitex_gc_pause_bl_x       (32.0f/uitex_size_x)
-#define uitex_gc_pause_bl_y       (32.0f/uitex_size_y)
 #define uitex_gc_step_bl_x        (64.0f/uitex_size_x)
 #define uitex_gc_step_bl_y          0.0f
 #define uitex_gc_unmuted_bl_x     (96.0f/uitex_size_x)
 #define uitex_gc_unmuted_bl_y       0.0f
-#define uitex_gc_muted_bl_x      ( 96.0f/uitex_size_x)
-#define uitex_gc_muted_bl_y      ( 32.0f/uitex_size_y)
 #define uitex_gc_unsoloed_bl_x   (128.0f/uitex_size_x)
 #define uitex_gc_unsoloed_bl_y      0.0f
-#define uitex_gc_soloed_bl_x     (128.0f/uitex_size_x)
-#define uitex_gc_soloed_bl_y     ( 32.0f/uitex_size_y)
 #define uitex_gc_moveNode_bl_x   (160.0f/uitex_size_x)
 #define uitex_gc_moveNode_bl_y     0.0f
-#define uitex_gc_moveBranch_bl_x (160.0f/uitex_size_x)
-#define uitex_gc_moveBranch_bl_y ( 32.0f/uitex_size_y)
 #define uitex_gc_unLock_bl_x     (192.0f/uitex_size_x)
 #define uitex_gc_unLock_bl_y        0.0f
-#define uitex_gc_lock_bl_x       (192.0f/uitex_size_x)
-#define uitex_gc_lock_bl_y       ( 32.0f/uitex_size_y)
 #define uitex_gc_up_bl_x         (224.0f/uitex_size_x)
 #define uitex_gc_up_bl_y            0.0f
 #define uitex_gc_top_bl_x        (256.0f/uitex_size_x)
@@ -63,5 +53,3 @@
 #define uitex_gc_forward_bl_y       0.0f
 #define uitex_gc_save_bl_x       (352.0f/uitex_size_x)
 #define uitex_gc_save_bl_y          0.0f
-#define uitex_gc_writing_bl_x    (352.0f/uitex_size_x)
-#define uitex_gc_writing_bl_y     (32.0f/uitex_size_y)

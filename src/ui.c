@@ -14,36 +14,57 @@
 
 typedef void (*cursEventHandler)(void *data);
 typedef struct {
-  float           *verts; // will likely be part of a larger array
   cursEventHandler onClickDn;
   cursEventHandler onDrag;
   cursEventHandler onClickUp;
 } uiElement;
 
+typedef enum {pei_oport, pei_iport, pei_aface, pei_mface, pei_mhandle} planeElemId;
+
+typedef enum {dt_n, dt_b, dt_na, dt_ba} dtype;
+
 typedef struct {
-  uiElement     *uie; // one for node face, one for each port
-  struct vinode *oputs;
-  struct vinode *iputs;
-  uint32_t       oputCount;
-  uint32_t       iputCount;
-  //dtype         *iputTypes;
-  //dtype         *oputTypes;
+  planeElemId    pei;
+  uiElement      uie;
+  dtype          type;
+  struct vinode *node;     // part of plane's vinode array
+  uint8_t        position; // 0 is leftmost space, 1 is space right adjacent to 0, etc.
+  uint8_t        index;    // 0 is leftmost port, 1 is 2nd leftmost port, etc.
+  uint8_t        patchCount; // only outputs have more than 1
+} port;
+
+typedef struct {
+  planeElemId    pei;
+  uiElement      uie;
+  struct vinode *dnStream; // part of plane's vinode array
+  struct vinode *upStream; // part of plane's vinode array
+  float         *lineVerts; // part of plane's vert data, both ends of oput pats only
+  float         *nodeVerts; // part of plane's vert data, ports and faces
+  port          *ports;     // part of plane's vert data, iputs then oputs
+  uint8_t        oputCount;
+  uint8_t        iputCount;
+  uint8_t        totalPatchCount; // sum of all patsPerOput
 } vinode;
 
 typedef struct {
-  float     rect_gu[4];
-  float     pos_gudc2[2]; // only used when changing planes
-  GLuint    vao;
-  GLuint    vbo;
-  GLuint    ebo;
-  float    *vertData;
-  uint32_t *elemData;
-  uint32_t  lineVertsSize; // in elements (floats)
-  uint32_t  lineVertsCap;  // in elements (floats)
-  uint32_t  nodeVertsSize; // in elements (ints), ports along with node faces
-  uint32_t  nodeVertsCap;  // in elements (ints), ports along with node faces
-  vinode   *vinodes;
-  uint32_t  vinodeCount;
+  float      rect_gu[4];
+  float      pos_gudc2[2]; // only used when changing planes
+  GLuint     vao;
+  GLuint     vbo;
+  GLuint     ebo;
+  float     *vertData;
+  uint32_t  *indxData;
+  uint32_t   lineVertsSize; // in elements (floats)
+  uint32_t   lineVertsCap;  // in elements (floats)
+  uint32_t   nodeVertsSize; // in elements (ints), ports along with node faces
+  uint32_t   nodeVertsCap;  // in elements (ints), ports along with node faces
+  vinode    *vinodes;       // malloced memory for all vinode strucutres
+  uint32_t   vinodeCount;
+  uint32_t   vinodeCap;
+  port      *ports;         // malloced memory for all port strucutres
+  uint32_t   portCount;
+  uint32_t   portCap;
+  void      *elements;      // pointers to vinodes and ports that is parallel with vertData
 } plane;
 // first verts of every plane are for background
 #define backVertsSize 48 // in elements, 12 vertices, 48 floats
@@ -238,7 +259,7 @@ void initPlane() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
   bufSize = planeElemDataSize(pln);
   glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
-  pln->elemData = glMapBufferRange(
+  pln->indxData = glMapBufferRange(
     GL_ELEMENT_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags
   );_glec
   
@@ -256,7 +277,7 @@ void initPlane() {
     pln->vertData[i] = centerVerts[i-(backVertsSize-16)];
   }
   
-  // element data
+  // indx data
   const uint32_t backElems[backElemsSize] = {
     // inside border
     0,1,3, 1,2,3,
@@ -265,8 +286,8 @@ void initPlane() {
     // center marker
     8,9,11, 9,10,11
   };
-  fr(i,backElemsSize) {pln->elemData[i] = backElems[i];}
-  setRectElems(&pln->elemData[backElemsSize], bufSize/sizeof(float));
+  fr(i,backElemsSize) {pln->indxData[i] = backElems[i];}
+  setRectElems(&pln->indxData[backElemsSize], bufSize/sizeof(float));
   
   setUiVertAttribs(uiShader);
 }
@@ -299,12 +320,12 @@ const float uitexButCorners_nt[2*gcid_count] = {
   uitex_gc_save_bl_x,     uitex_gc_save_bl_y
 };
 #define   gc_vertsSize (16*gcid_count) // in elements
-#define   gc_elemsSize ( 6*gcid_count) // in elements
+#define   gc_indxsSize ( 6*gcid_count) // in elements
 GLuint    gc_vao = 0;
 GLuint    gc_vbo = 0;
 GLuint    gc_ebo = 0;
 float    *gc_vertData = NULL;
-uint32_t *gc_elemData = NULL;
+uint32_t *gc_indxData = NULL;
 uiElement gc_uiElems[gcid_count];
 
 bool gc_paused = true;
@@ -333,102 +354,123 @@ void unshiftTex(float *vertData, float texBlY, float hight) {
 void gc_onPlayPauseDn(void *data) {
   if (gc_paused) {
     gc_paused = false;
-    shiftTex(
-      &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
-    );
+    shiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
   }
   else {
     gc_paused = true;
-    unshiftTex(
-      &gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide
-    );
+    unshiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
   }
+  redrawGc = true;
+}
+void gc_onStepDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
+  if (!gc_paused) {
+    gc_paused = true;
+    unshiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
+  }
+  redrawGc = true;
+}
+void gc_onStepUp(void *data) {
+  unshiftTex(&gc_vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
 void gc_onMuteDn(void *data) {
   if (gc_muted) {
     gc_muted = false;
-    unshiftTex(
-      &gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide
-    );
+    unshiftTex(&gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
   }
   else {
     gc_muted = true;
-    shiftTex(
-      &gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide
-    );
+    shiftTex(&gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
 void gc_onSoloDn(void *data) {
   if (gc_soloed) {
     gc_soloed = false;
-    unshiftTex(
-      &gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide
-    );
+    unshiftTex(&gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
   }
   else {
     gc_soloed = true;
-    shiftTex(
-      &gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide
-    );
+    shiftTex(&gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
 void gc_onMoveBranchDn(void *data) {
   if (gc_mvBr) {
     gc_mvBr = false;
-    unshiftTex(
-      &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
-    );
+    unshiftTex(&gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
   }
   else {
     gc_mvBr = true;
-    shiftTex(
-      &gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide
-    );
+    shiftTex(&gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
 void gc_onLockDn(void *data) {
   if (gc_locked) {
     gc_locked = false;
-    unshiftTex(
-      &gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
-    );
+    unshiftTex(&gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   }
   else {
     gc_locked = true;
-    shiftTex(
-      &gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
-    );
+    shiftTex(&gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onSaveDn(void *data) {
-  shiftTex(
-    &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
+void gc_onUpDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onUpUp(void *data) {
+  unshiftTex(&gc_vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide
   );
   redrawGc = true;
 }
+void gc_onTopDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onTopUp(void *data) {
+  unshiftTex(&gc_vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onBackDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onBackUp(void *data) {
+  unshiftTex(&gc_vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onForwardDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onForwardUp(void *data) {
+  unshiftTex(&gc_vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
+void gc_onSaveDn(void *data) {
+  shiftTex(&gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
+  redrawGc = true;
+}
 void gc_onSaveUp(void *data) {
-  unshiftTex(
-    &gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide
-  );
+  unshiftTex(&gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
 
 cursEventHandler gc_onClickDns[gcid_count] = {
   gc_onPlayPauseDn,
-  doNothing,
+  gc_onStepDn,
   gc_onMuteDn,
   gc_onSoloDn,
   gc_onMoveBranchDn,
   gc_onLockDn,
-  doNothing,
-  doNothing,
-  doNothing,
-  doNothing,
+  gc_onUpDn,
+  gc_onTopDn,
+  gc_onBackDn,
+  gc_onForwardDn,
   gc_onSaveDn
 };
 cursEventHandler gc_onDrags[gcid_count] = {
@@ -436,8 +478,17 @@ cursEventHandler gc_onDrags[gcid_count] = {
   doNothing,doNothing,doNothing,doNothing,doNothing
 };
 cursEventHandler gc_onClickUps[gcid_count] = {
-  doNothing,doNothing,doNothing,doNothing,doNothing,doNothing,
-  doNothing,doNothing,doNothing,doNothing,gc_onSaveUp
+  doNothing,
+  gc_onStepUp,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  gc_onUpUp,
+  gc_onTopUp,
+  gc_onBackUp,
+  gc_onForwardUp,
+  gc_onSaveUp
 };
 
 
@@ -484,7 +535,6 @@ void initGc() {
     texRect[2] = uitexButCorners_nt[2*b    ] + uitex_gc_buttonSide;
     texRect[3] = uitexButCorners_nt[2*b + 1] + uitex_gc_buttonSide;
     mapTexRectToVerts(&gc_vertData[16*b], butRect, texRect);
-    gc_uiElems[b].verts     = &gc_vertData[16*b];
     gc_uiElems[b].onClickDn = gc_onClickDns[b];
     gc_uiElems[b].onDrag    = gc_onDrags[b];
     gc_uiElems[b].onClickUp = gc_onClickUps[b];
@@ -494,17 +544,17 @@ void initGc() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gc_ebo);_glec
   glBufferStorage(
     GL_ELEMENT_ARRAY_BUFFER,
-    gc_elemsSize*sizeof(uint32_t),
+    gc_indxsSize*sizeof(uint32_t),
     0,
     bufferStorageFlags
   );_glec
-  gc_elemData = glMapBufferRange(
+  gc_indxData = glMapBufferRange(
     GL_ELEMENT_ARRAY_BUFFER,
     0,
-    gc_elemsSize*sizeof(uint32_t),
+    gc_indxsSize*sizeof(uint32_t),
     bufferStorageFlags
   );_glec
-  setRectElems(gc_elemData, 6*gcid_count);
+  setRectElems(gc_indxData, 6*gcid_count);
   
   setUiVertAttribs(uiShader);
 }
@@ -567,7 +617,7 @@ void clickDn(int posX_px, int posY_px) {
   fr(i,2) {clickDnScroll_gu2[i] = newScroll_gu2[i];}
   if (pointIsInRect(newCurs_gu3, gc_rect_gu)) {
     fr(b,gcid_count) {
-      if (pointIsInVertRect(newCurs_gu3, gc_uiElems[b].verts)) {
+      if (pointIsInVertRect(newCurs_gu3, &gc_vertData[16*b])) {
         onDrag    = gc_uiElems[b].onDrag;
         onClickUp = gc_uiElems[b].onClickUp;
         gc_uiElems[b].onClickDn(NULL);
@@ -628,4 +678,5 @@ void perFrame() {
   }
   fr(i,3) {oldCurs_gu3[i] = newCurs_gu3[i];}
   fr(i,2) {oldScroll_gu2[i] = newScroll_gu2[i];}
+  glFinish();
 }
