@@ -3,6 +3,8 @@ env = Environment(CC = "gcc", CCFLAGS = flags)
 src = [
     "main.c",
     "ui.c",
+    "forUi.c",
+    "globalControls.c",
     "oglTools.c",
     "fileTools.c",
     "timestamp.c",
