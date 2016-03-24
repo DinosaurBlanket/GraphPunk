@@ -12,35 +12,42 @@
 #include "globalControls.h"
 
 
-typedef enum {pei_oport, pei_iport, pei_aface, pei_mface, pei_mhandle} planeElemId;
+typedef enum {
+  pei_iport,
+  pei_oport,
+  pei_aface,
+  pei_mface,
+  pei_mhandle
+} planeElemId;
 typedef enum {dt_n, dt_b, dt_na, dt_ba} dtype;
 
 typedef struct {
-  planeElemId    pei;
-  uiElement      uie;
-  dtype          type;
-  struct vinode *node;     // part of plane's vinode array
-  uint8_t        position; // 0 is leftmost space, 1 is space right adjacent to 0, etc.
-  uint8_t        index;    // 0 is leftmost port, 1 is 2nd leftmost port, etc.
-  uint8_t        patchCount; // only outputs have more than 1
-} port;
-
-typedef struct {
-  planeElemId    pei;
-  uiElement      uie;
-  struct vinode *dnStream; // part of plane's vinode array
-  struct vinode *upStream; // part of plane's vinode array
-  float         *lineVerts; // part of plane's vert data, both ends of oput pats only
-  float         *nodeVerts; // part of plane's vert data, ports and faces
-  port          *ports;     // part of plane's vert data, iputs then oputs
-  uint8_t        oputCount;
-  uint8_t        iputCount;
-  uint8_t        totalPatchCount; // sum of all patsPerOput
+  planeElemId  pei;
+  uint8_t      iputCount; // ports are in the same planeElem array following this node
+  uint8_t      oputCount; // ports are in the same planeElem array following this node
 } vinode;
 
 typedef struct {
+  planeElemId pei;
+  dtype       type;
+  uint32_t    node; // offset into plane's planeElems array
+  uint8_t     pos;  // 0 is leftmost port, 1 is 2nd leftmost port, etc.
+} nodeBase;
+typedef struct {nodeBase b;} oport;
+typedef struct {
+  nodeBase b;
+  uint32_t lineVerts; // offset into plane's vert data, both ends of line
+  uint32_t oput;      // offset into plane's planeElems
+} iport;
+
+typedef union {oport o; iport i; vinode n; planeElemId pei;} planeElem;
+
+typedef struct {
   float      rect_gu[4];
-  float      pos_gudc2[2]; // only used when changing planes
+  float      pos_gudc2[2];  // only used when changing planes
+  planeElem *planeElems;    // malloced, parallel with vertData
+  uint32_t   planeElemCount;
+  uint32_t   planeElemCap;
   GLuint     vao;
   GLuint     vbo;
   GLuint     ebo;
@@ -48,15 +55,8 @@ typedef struct {
   uint32_t  *indxData;
   uint32_t   lineVertsSize; // in elements (floats)
   uint32_t   lineVertsCap;  // in elements (floats)
-  uint32_t   nodeVertsSize; // in elements (ints), ports along with node faces
-  uint32_t   nodeVertsCap;  // in elements (ints), ports along with node faces
-  vinode    *vinodes;       // malloced memory for all vinode strucutres
-  uint32_t   vinodeCount;
-  uint32_t   vinodeCap;
-  port      *ports;         // malloced memory for all port strucutres
-  uint32_t   portCount;
-  uint32_t   portCap;
-  void      *elements;      // pointers to vinodes and ports that is parallel with vertData
+  uint32_t   nodeVertsSize; // in elements (ints), a rect for each planeElem
+  uint32_t   nodeVertsCap;  // in elements (ints), a rect for each planeElem
 } plane;
 // first verts of every plane are for background
 #define backVertsSize 48 // in elements, 12 vertices, 48 floats
@@ -68,7 +68,6 @@ uint32_t planeElemDataSize(plane *p) {
   return (backElemsSize + 3*((p->lineVertsCap + p->nodeVertsCap)/2))*sizeof(uint32_t);
 }
 // Module faces are drawn separately
-
 typedef struct {
   plane p;
   //exnode *exnodes;
@@ -211,7 +210,7 @@ void initPlane(void) {
   setUiVertAttribs();
 }
 
-
+#include <stdio.h>
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {unitScale_2[i] = gridUnit_px/(videoSize_px2[i]/2.0f);}
   fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit_px)/2.0f;}
@@ -219,6 +218,24 @@ void initRoot(float videoSize_px2[2]) {
   initUiShader();
   initPlane();
   initGc();
+  
+  
+  printf(
+    "sizeof(nodeBase) :%3li\n"
+    "sizeof(oport)    :%3li\n"
+    "sizeof(iport)    :%3li\n"
+    "sizeof(vinode)   :%3li\n"
+    "sizeof(planeElem):%3li\n"
+    "sizeof(plane)    :%3li\n",
+    sizeof(nodeBase),
+    sizeof(oport),
+    sizeof(iport),
+    sizeof(vinode),
+    sizeof(planeElem),
+    sizeof(plane)
+  );
+  
+  
 }
 
 void posPxToPosGu(float pos_gu[2], const int posX_px, const int posY_px) {
