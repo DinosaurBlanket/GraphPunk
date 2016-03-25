@@ -218,24 +218,6 @@ void initRoot(float videoSize_px2[2]) {
   initUiShader();
   initPlane();
   initGc();
-  
-  
-  printf(
-    "sizeof(nodeBase) :%3li\n"
-    "sizeof(oport)    :%3li\n"
-    "sizeof(iport)    :%3li\n"
-    "sizeof(vinode)   :%3li\n"
-    "sizeof(planeElem):%3li\n"
-    "sizeof(plane)    :%3li\n",
-    sizeof(nodeBase),
-    sizeof(oport),
-    sizeof(iport),
-    sizeof(vinode),
-    sizeof(planeElem),
-    sizeof(plane)
-  );
-  
-  
 }
 
 void posPxToPosGu(float pos_gu[2], const int posX_px, const int posY_px) {
