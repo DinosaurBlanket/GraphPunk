@@ -7,7 +7,7 @@
 
 #include "error.h"
 #include "oglTools.h"
-#include "../img/uitex.h"
+#include "uitex.h"
 #include "forUi.h"
 #include "globalControls.h"
 
@@ -73,6 +73,14 @@ typedef struct {
   //exnode *exnodes;
   // *specialNodes;
 } module;
+
+typedef enum {
+  aid_add,
+  aid_sub,
+  aid_mul,
+  aid_div,
+  aid_count
+} atomIDs;
 
 module rootMod = {0};
 plane *pln = NULL;
@@ -210,7 +218,6 @@ void initPlane(void) {
   setUiVertAttribs();
 }
 
-#include <stdio.h>
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {unitScale_2[i] = gridUnit_px/(videoSize_px2[i]/2.0f);}
   fr(i,2) {halfVideoSize_gu2[i] = (videoSize_px2[i]/gridUnit_px)/2.0f;}

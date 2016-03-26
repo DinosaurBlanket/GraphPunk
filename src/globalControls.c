@@ -5,11 +5,11 @@
 #include <GL/glew.h>
 
 #include "error.h"
-#include "../img/uitex.h"
+#include "uitex.h"
 #include "forUi.h"
 
-const float gc_butSide_gu = 2;
-float  gc_rect_gu[4];
+const float butSide_gu = 2;
+float  rect_gu[4];
 typedef enum {
   gcid_play, gcid_step, gcid_mute, gcid_solo, gcid_mvBr, gcid_lock,
   gcid_up,   gcid_top,  gcid_back, gcid_frwd, gcid_save, gcid_count
@@ -27,20 +27,20 @@ const float uitexButCorners_nt[2*gcid_count] = {
   uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
   uitex_gc_save_bl_x,     uitex_gc_save_bl_y
 };
-#define   gc_vertsSize (16*gcid_count) // in elements
-#define   gc_indxsSize ( 6*gcid_count) // in elements
-GLuint    gc_vao = 0;
-GLuint    gc_vbo = 0;
-GLuint    gc_ebo = 0;
-float    *gc_vertData = NULL;
-uint32_t *gc_indxData = NULL;
-uiElement gc_uiElems[gcid_count];
+#define   vertsSize (16*gcid_count) // in elements
+#define   indxsSize ( 6*gcid_count) // in elements
+GLuint    vao = 0;
+GLuint    vbo = 0;
+GLuint    ebo = 0;
+float    *vertData = NULL;
+uint32_t *indxData = NULL;
+uiElement uiElems[gcid_count];
 
-bool gc_paused = true;
-bool gc_muted  = false;
-bool gc_soloed = false;
-bool gc_mvBr   = false;
-bool gc_locked = false;
+bool paused = true;
+bool muted  = false;
+bool soloed = false;
+bool mvBr   = false;
+bool locked = false;
 
 bool redrawGc = true;
 
@@ -57,112 +57,112 @@ void unshiftTex(float *vertData, float texBlY, float hight) {
   vertData[15] = texBlY;
 }
 
-void gc_onPlayPauseDn(void *data) {
-  if (gc_paused) {
-    gc_paused = false;
-    shiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
+void onPlayPauseDn(void *data) {
+  if (paused) {
+    paused = false;
+    shiftTex(&vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
   }
   else {
-    gc_paused = true;
-    unshiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
+    paused = true;
+    unshiftTex(&vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onStepDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
-  if (!gc_paused) {
-    gc_paused = true;
-    unshiftTex(&gc_vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
+void onStepDn(void *data) {
+  shiftTex(&vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
+  if (!paused) {
+    paused = true;
+    unshiftTex(&vertData[16*gcid_play], uitex_gc_play_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onStepUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
+void onStepUp(void *data) {
+  unshiftTex(&vertData[16*gcid_step], uitex_gc_step_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onMuteDn(void *data) {
-  if (gc_muted) {
-    gc_muted = false;
-    unshiftTex(&gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
+void onMuteDn(void *data) {
+  if (muted) {
+    muted = false;
+    unshiftTex(&vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
   }
   else {
-    gc_muted = true;
-    shiftTex(&gc_vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
+    muted = true;
+    shiftTex(&vertData[16*gcid_mute], uitex_gc_unmuted_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onSoloDn(void *data) {
-  if (gc_soloed) {
-    gc_soloed = false;
-    unshiftTex(&gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
+void onSoloDn(void *data) {
+  if (soloed) {
+    soloed = false;
+    unshiftTex(&vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
   }
   else {
-    gc_soloed = true;
-    shiftTex(&gc_vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
+    soloed = true;
+    shiftTex(&vertData[16*gcid_solo], uitex_gc_unsoloed_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onMoveBranchDn(void *data) {
-  if (gc_mvBr) {
-    gc_mvBr = false;
-    unshiftTex(&gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
+void onMoveBranchDn(void *data) {
+  if (mvBr) {
+    mvBr = false;
+    unshiftTex(&vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
   }
   else {
-    gc_mvBr = true;
-    shiftTex(&gc_vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
+    mvBr = true;
+    shiftTex(&vertData[16*gcid_mvBr], uitex_gc_moveNode_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onLockDn(void *data) {
-  if (gc_locked) {
-    gc_locked = false;
-    unshiftTex(&gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
+void onLockDn(void *data) {
+  if (locked) {
+    locked = false;
+    unshiftTex(&vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   }
   else {
-    gc_locked = true;
-    shiftTex(&gc_vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
+    locked = true;
+    shiftTex(&vertData[16*gcid_lock], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   }
   redrawGc = true;
 }
-void gc_onUpDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide);
+void onUpDn(void *data) {
+  shiftTex(&vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onUpUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide
+void onUpUp(void *data) {
+  unshiftTex(&vertData[16*gcid_up], uitex_gc_up_bl_y, uitex_gc_buttonSide
   );
   redrawGc = true;
 }
-void gc_onTopDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
+void onTopDn(void *data) {
+  shiftTex(&vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onTopUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
+void onTopUp(void *data) {
+  unshiftTex(&vertData[16*gcid_top], uitex_gc_top_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onBackDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
+void onBackDn(void *data) {
+  shiftTex(&vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onBackUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
+void onBackUp(void *data) {
+  unshiftTex(&vertData[16*gcid_back], uitex_gc_back_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onForwardDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
+void onForwardDn(void *data) {
+  shiftTex(&vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onForwardUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
+void onForwardUp(void *data) {
+  unshiftTex(&vertData[16*gcid_frwd], uitex_gc_forward_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onSaveDn(void *data) {
-  shiftTex(&gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
+void onSaveDn(void *data) {
+  shiftTex(&vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
-void gc_onSaveUp(void *data) {
-  unshiftTex(&gc_vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
+void onSaveUp(void *data) {
+  unshiftTex(&vertData[16*gcid_save], uitex_gc_unLock_bl_y, uitex_gc_buttonSide);
   redrawGc = true;
 }
 
@@ -184,12 +184,12 @@ bool pointIsInVertRect(const float point[2], const float vertRect[16]) {
 }
 
 bool onClickGc(float curs_gu[3]) {
-  if (pointIsInRect(curs_gu, gc_rect_gu)) {
+  if (pointIsInRect(curs_gu, rect_gu)) {
     fr(b,gcid_count) {
-      if (pointIsInVertRect(curs_gu, &gc_vertData[16*b])) {
-        onDrag    = gc_uiElems[b].onDrag;
-        onClickUp = gc_uiElems[b].onClickUp;
-        gc_uiElems[b].onClickDn(NULL);
+      if (pointIsInVertRect(curs_gu, &vertData[16*b])) {
+        onDrag    = uiElems[b].onDrag;
+        onClickUp = uiElems[b].onClickUp;
+        uiElems[b].onClickDn(NULL);
         return true;
       }
     }
@@ -197,45 +197,45 @@ bool onClickGc(float curs_gu[3]) {
   return false;
 }
 
-cursEventHandler gc_onClickDns[gcid_count] = {
-  gc_onPlayPauseDn,
-  gc_onStepDn,
-  gc_onMuteDn,
-  gc_onSoloDn,
-  gc_onMoveBranchDn,
-  gc_onLockDn,
-  gc_onUpDn,
-  gc_onTopDn,
-  gc_onBackDn,
-  gc_onForwardDn,
-  gc_onSaveDn
+cursEventHandler onClickDns[gcid_count] = {
+  onPlayPauseDn,
+  onStepDn,
+  onMuteDn,
+  onSoloDn,
+  onMoveBranchDn,
+  onLockDn,
+  onUpDn,
+  onTopDn,
+  onBackDn,
+  onForwardDn,
+  onSaveDn
 };
-cursEventHandler gc_onDrags[gcid_count] = {
+cursEventHandler onDrags[gcid_count] = {
   doNothing,doNothing,doNothing,doNothing,doNothing,doNothing,
   doNothing,doNothing,doNothing,doNothing,doNothing
 };
-cursEventHandler gc_onClickUps[gcid_count] = {
+cursEventHandler onClickUps[gcid_count] = {
   doNothing,
-  gc_onStepUp,
-  doNothing,
-  doNothing,
+  onStepUp,
   doNothing,
   doNothing,
-  gc_onUpUp,
-  gc_onTopUp,
-  gc_onBackUp,
-  gc_onForwardUp,
-  gc_onSaveUp
+  doNothing,
+  doNothing,
+  onUpUp,
+  onTopUp,
+  onBackUp,
+  onForwardUp,
+  onSaveUp
 };
 
 void initGc(void) {
-  glGenVertexArrays(1, &gc_vao);_glec
-  glBindVertexArray(gc_vao);_glec
+  glGenVertexArrays(1, &vao);_glec
+  glBindVertexArray(vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
-  glGenBuffers(1, &gc_vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, gc_vbo);_glec
+  glGenBuffers(1, &vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
   GLbitfield bufferStorageFlags = 
     GL_MAP_WRITE_BIT      | 
     GL_MAP_PERSISTENT_BIT | 
@@ -243,60 +243,60 @@ void initGc(void) {
   ;
   glBufferStorage(
     GL_ARRAY_BUFFER,
-    gc_vertsSize*sizeof(float),
+    vertsSize*sizeof(float),
     0,
     bufferStorageFlags
   );_glec
-  gc_vertData = glMapBufferRange(
+  vertData = glMapBufferRange(
     GL_ARRAY_BUFFER,
     0,
-    gc_vertsSize*sizeof(float),
+    vertsSize*sizeof(float),
     bufferStorageFlags
   );_glec
   
-  gc_rect_gu[0] = -gc_butSide_gu*(gcid_count/2.0f);
-  gc_rect_gu[1] = halfVideoSize_gu2[1] - gc_butSide_gu;
-  gc_rect_gu[2] =  gc_butSide_gu*(gcid_count/2.0f);
-  gc_rect_gu[3] = halfVideoSize_gu2[1];
+  rect_gu[0] = -butSide_gu*(gcid_count/2.0f);
+  rect_gu[1] = halfVideoSize_gu2[1] - butSide_gu;
+  rect_gu[2] =  butSide_gu*(gcid_count/2.0f);
+  rect_gu[3] = halfVideoSize_gu2[1];
   
   float butRect[4];
-  butRect[1] = gc_rect_gu[1];
-  butRect[3] = gc_rect_gu[3];
+  butRect[1] = rect_gu[1];
+  butRect[3] = rect_gu[3];
   float texRect[4];
   fr(b, gcid_count) {
-    butRect[0] = gc_rect_gu[0] + gc_butSide_gu*b;
-    butRect[2] = gc_rect_gu[0] + gc_butSide_gu*(b+1);
+    butRect[0] = rect_gu[0] + butSide_gu*b;
+    butRect[2] = rect_gu[0] + butSide_gu*(b+1);
     texRect[0] = uitexButCorners_nt[2*b    ];
     texRect[1] = uitexButCorners_nt[2*b + 1];
     texRect[2] = uitexButCorners_nt[2*b    ] + uitex_gc_buttonSide;
     texRect[3] = uitexButCorners_nt[2*b + 1] + uitex_gc_buttonSide;
-    mapTexRectToVerts(&gc_vertData[16*b], butRect, texRect);
-    gc_uiElems[b].onClickDn = gc_onClickDns[b];
-    gc_uiElems[b].onDrag    = gc_onDrags[b];
-    gc_uiElems[b].onClickUp = gc_onClickUps[b];
+    mapTexRectToVerts(&vertData[16*b], butRect, texRect);
+    uiElems[b].onClickDn = onClickDns[b];
+    uiElems[b].onDrag    = onDrags[b];
+    uiElems[b].onClickUp = onClickUps[b];
   }
   
-  glGenBuffers(1, &gc_ebo);_glec
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gc_ebo);_glec
+  glGenBuffers(1, &ebo);_glec
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
   glBufferStorage(
     GL_ELEMENT_ARRAY_BUFFER,
-    gc_indxsSize*sizeof(uint32_t),
+    indxsSize*sizeof(uint32_t),
     0,
     bufferStorageFlags
   );_glec
-  gc_indxData = glMapBufferRange(
+  indxData = glMapBufferRange(
     GL_ELEMENT_ARRAY_BUFFER,
     0,
-    gc_indxsSize*sizeof(uint32_t),
+    indxsSize*sizeof(uint32_t),
     bufferStorageFlags
   );_glec
-  setRectElems(gc_indxData, 6*gcid_count);
+  setRectElems(indxData, 6*gcid_count);
   
   setUiVertAttribs();
 }
 
 void drawGc(void) {
-  glBindVertexArray(gc_vao);_glec
+  glBindVertexArray(vao);_glec
   glUniform2f(unif_scroll, 0, 0);_glec
   glDrawElements(GL_TRIANGLES, 6*gcid_count, GL_UNSIGNED_INT, 0);_glec
   redrawGc = false;

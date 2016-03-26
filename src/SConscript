@@ -5,6 +5,7 @@ src = [
     "ui.c",
     "forUi.c",
     "globalControls.c",
+    "uitex.c",
     "oglTools.c",
     "fileTools.c",
     "timestamp.c",

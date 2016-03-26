@@ -1,3 +1,5 @@
+#pragma once
+
 #define uitex_path "img/uitex.bmp"
 
 // in pixels
@@ -82,3 +84,6 @@
 #define uitex_aface_div_bl_y     ( 64.0f/uitex_size_y)
 #define uitex_aface_div_tr_x     (224.0f/uitex_size_x)
 #define uitex_aface_div_tr_y     ( 80.0f/uitex_size_y)
+
+
+extern const float uitex_atomFaces[];
