@@ -12,7 +12,7 @@ bool allEq(const float *l, const float *r, int c) {
   return true;
 }
 
-float halfVideoSize_gu2[2];
+float halfVideoSize_2[2];
 
 void printVerts(const float *vertData, int vertCount) {
   fr(i,vertCount) {
@@ -29,27 +29,27 @@ cursEventHandler onClickUp = doNothing;
 
 void mapTexRectToVerts(
   float      *destVertData,
-  const float destRect_gu[4], // grid units
+  const float destRect_px[4], // grid units
   const float srcRect_nt[4]   // normalized texture coordinates
 ) {
   // bl
-  destVertData[ 0] = destRect_gu[0];
-  destVertData[ 1] = destRect_gu[1];
+  destVertData[ 0] = destRect_px[0];
+  destVertData[ 1] = destRect_px[1];
   destVertData[ 2] =  srcRect_nt[0];
   destVertData[ 3] =  srcRect_nt[1];
   // tl
-  destVertData[ 4] = destRect_gu[0];
-  destVertData[ 5] = destRect_gu[3];
+  destVertData[ 4] = destRect_px[0];
+  destVertData[ 5] = destRect_px[3];
   destVertData[ 6] =  srcRect_nt[0];
   destVertData[ 7] =  srcRect_nt[3];
   // tr
-  destVertData[ 8] = destRect_gu[2];
-  destVertData[ 9] = destRect_gu[3];
+  destVertData[ 8] = destRect_px[2];
+  destVertData[ 9] = destRect_px[3];
   destVertData[10] =  srcRect_nt[2];
   destVertData[11] =  srcRect_nt[3];
   // br
-  destVertData[12] = destRect_gu[2];
-  destVertData[13] = destRect_gu[1];
+  destVertData[12] = destRect_px[2];
+  destVertData[13] = destRect_px[1];
   destVertData[14] =  srcRect_nt[2];
   destVertData[15] =  srcRect_nt[1];
 }
@@ -68,8 +68,8 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
 }
 
 GLuint uiShader;
-GLint  unif_scroll;
-GLint  unif_unitScale;
+GLint unif_scroll;
+GLint unif_halfVideoSize;
 GLuint uiTex;
 void setUiVertAttribs(void) {
   GLint attr_pos      = glGetAttribLocation(uiShader, "pos");_glec

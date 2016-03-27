@@ -8,8 +8,8 @@
 #include "uitex.h"
 #include "forUi.h"
 
-const float butSide_gu = 2;
-float  rect_gu[4];
+const float butSide = 2*fingerUnit;
+float  wholeRect[4];
 typedef enum {
   gcid_play, gcid_step, gcid_mute, gcid_solo, gcid_mvBr, gcid_lock,
   gcid_up,   gcid_top,  gcid_back, gcid_frwd, gcid_save, gcid_count
@@ -183,10 +183,10 @@ bool pointIsInVertRect(const float point[2], const float vertRect[16]) {
   ;
 }
 
-bool onClickGc(float curs_gu[3]) {
-  if (pointIsInRect(curs_gu, rect_gu)) {
+bool onClickGc(float curs[3]) {
+  if (pointIsInRect(curs, wholeRect)) {
     fr(b,gcid_count) {
-      if (pointIsInVertRect(curs_gu, &vertData[16*b])) {
+      if (pointIsInVertRect(curs, &vertData[16*b])) {
         onDrag    = uiElems[b].onDrag;
         onClickUp = uiElems[b].onClickUp;
         uiElems[b].onClickDn(NULL);
@@ -254,18 +254,18 @@ void initGc(void) {
     bufferStorageFlags
   );_glec
   
-  rect_gu[0] = -butSide_gu*(gcid_count/2.0f);
-  rect_gu[1] = halfVideoSize_gu2[1] - butSide_gu;
-  rect_gu[2] =  butSide_gu*(gcid_count/2.0f);
-  rect_gu[3] = halfVideoSize_gu2[1];
+  wholeRect[0] = -butSide*(gcid_count/2.0f);
+  wholeRect[1] = halfVideoSize_2[1] - butSide;
+  wholeRect[2] =  butSide*(gcid_count/2.0f);
+  wholeRect[3] = halfVideoSize_2[1];
   
   float butRect[4];
-  butRect[1] = rect_gu[1];
-  butRect[3] = rect_gu[3];
+  butRect[1] = wholeRect[1];
+  butRect[3] = wholeRect[3];
   float texRect[4];
   fr(b, gcid_count) {
-    butRect[0] = rect_gu[0] + butSide_gu*b;
-    butRect[2] = rect_gu[0] + butSide_gu*(b+1);
+    butRect[0] = wholeRect[0] + butSide*b;
+    butRect[2] = wholeRect[0] + butSide*(b+1);
     texRect[0] = uitexButCorners_nt[2*b    ];
     texRect[1] = uitexButCorners_nt[2*b + 1];
     texRect[2] = uitexButCorners_nt[2*b    ] + uitex_gc_buttonSide;
