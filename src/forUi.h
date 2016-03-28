@@ -21,12 +21,6 @@ extern void doNothing(void *data);
 extern cursEventHandler onDrag;
 extern cursEventHandler onClickUp;
 
-typedef struct {
-  cursEventHandler onClickDn;
-  cursEventHandler onDrag;
-  cursEventHandler onClickUp;
-} uiElement;
-
 extern GLuint uiShader;
 extern GLint  unif_scroll;
 extern GLint  unif_halfVideoSize;

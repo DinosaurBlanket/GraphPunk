@@ -26,16 +26,17 @@ typedef struct {
   uint8_t      iputCount; // ports are in the same planeElem array following this node
   uint8_t      oputCount; // ports are in the same planeElem array following this node
 } vinode;
+// a node's ports always follow the node in the planeElems array
 
 typedef struct {
   planeElemId pei;
   dtype       type;
   uint32_t    node; // offset into plane's planeElems array
   uint8_t     pos;  // 0 is leftmost port, 1 is 2nd leftmost port, etc.
-} nodeBase;
-typedef struct {nodeBase b;} oport;
+} portBase;
+typedef struct {portBase b;} oport;
 typedef struct {
-  nodeBase b;
+  portBase b;
   uint32_t lineVerts; // offset into plane's vert data, both ends of line
   uint32_t oput;      // offset into plane's planeElems
 } iport;

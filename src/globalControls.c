@@ -34,6 +34,12 @@ GLuint    vbo = 0;
 GLuint    ebo = 0;
 float    *vertData = NULL;
 uint32_t *indxData = NULL;
+
+typedef struct {
+  cursEventHandler onClickDn;
+  cursEventHandler onDrag;
+  cursEventHandler onClickUp;
+} uiElement;
 uiElement uiElems[gcid_count];
 
 bool paused = true;
