@@ -156,7 +156,7 @@ void initPlane(void) {
 
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
-  pln = &rootMod.p;
+  pln = &rootMod.plane;
   initUiShader();
   initPlane();
   initGc();

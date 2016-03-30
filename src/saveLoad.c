@@ -6,11 +6,12 @@
 //on disk there is:
 //  a folder of module files named after their moduleID,
 //  a list of moduleIDs that are in use,
-//  maybe a file containing state such as the last module they were in?
+//  maybe a file containing global state such as the last module they were in
 
 
 typedef struct {
-  uint32_t moduleID;
+  uint32_t moduleId;
+  uint32_t parentModuleId;
   uint32_t planeElemCount;
   float    planePos[2];
 } diskModuleHeader;

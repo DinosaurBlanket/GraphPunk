@@ -18,11 +18,13 @@ typedef enum {
 } atomIDs;
 #define atomIdModuleIdBoundary 4000
 
+
 typedef struct {
-  planeElemId  pei;
-  uint8_t      iputCount; // ports are in the same planeElem array following this node
-  uint8_t      oputCount; // ports are in the same planeElem array following this node
-  uint32_t     id;        // if id > atomIdModuleIdBoundary, it's a moduleID
+  planeElemId    pei;
+  uint8_t        iputCount; // ports are in the same planeElem array following this node
+  uint8_t        oputCount; // ports are in the same planeElem array following this node
+  uint32_t       id;        // if id > atomIdModuleIdBoundary, it's a moduleId
+  struct module *module;    // if NULL, it's not a module
 } vinode;
 // a node's ports always follow the node in the planeElems array
 
@@ -68,8 +70,9 @@ uint32_t planeElemDataSize(plane *p) {
 }
 // Module faces are drawn separately
 typedef struct {
-  uint32_t moduleNumber;
-  plane    p;
+  uint32_t        moduleId;
+  struct module  *parent;
+  plane           plane;
   //exnode *exnodes;
   // *specialNodes;
 } module;

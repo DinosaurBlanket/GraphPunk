@@ -17,7 +17,7 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize);
 void setUiVertAttribs(void);
 
 typedef void (*cursEventHandler)(void *data);
-extern void doNothing(void *data);
+void doNothing(void *data);
 extern cursEventHandler onDrag;
 extern cursEventHandler onClickUp;
 
