@@ -10,11 +10,12 @@
 #include "uitex.h"
 #include "forUi.h"
 #include "globalControls.h"
+#include "module.h"
 #include "saveLoad.h"
 
 
-module rootMod = {0};
-plane *pln = NULL;
+module *mdl = NULL;
+plane  *pln = NULL;
 const float planePadding = 12*fingerUnit; // arbitrary
 
 #include <stdio.h>
@@ -87,12 +88,23 @@ void initPlane(void) {
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
+  
+  
+  
+  mdl = loadLastModule();
+  
+  //pln = &rootMod.plane;
+  /*
   pln->lineVertsSize =   0;
   pln->nodeVertsSize =   0;
   pln->lineVertsCap  = 120; // arbitrary
   pln->nodeVertsCap  =  60; // arbitrary
   pln->pos[0] = 0;
   pln->pos[1] = 0;
+  */
+  
+  
+  
   
   glGenBuffers(1, &pln->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
@@ -156,7 +168,6 @@ void initPlane(void) {
 
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
-  pln = &rootMod.plane;
   initUiShader();
   initPlane();
   initGc();
