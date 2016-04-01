@@ -68,9 +68,9 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
 }
 
 GLuint uiShader;
+GLuint uiTex;
 GLint unif_scroll;
 GLint unif_halfVideoSize;
-GLuint uiTex;
 void setUiVertAttribs(void) {
   GLint attr_pos      = glGetAttribLocation(uiShader, "pos");_glec
   GLint attr_texCoord = glGetAttribLocation(uiShader, "texCoord");_glec

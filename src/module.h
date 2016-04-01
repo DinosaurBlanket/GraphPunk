@@ -45,7 +45,7 @@ typedef union {
 } planeElem;
 
 typedef struct {
-  float      rect[4];
+  float      rect[4];       // borders of plane
   float      pos[2];        // only used when changing planes
   planeElem *planeElems;    // malloced, parallel with vertData
   uint32_t   planeElemCount;
@@ -69,6 +69,7 @@ uint32_t planeElemDataSize(plane *p);
 typedef struct {
   uint32_t        moduleId;
   struct module  *parent;
+  float           faceRect[4];
   plane           plane;
   //exnode *exnodes;
   // *specialNodes;

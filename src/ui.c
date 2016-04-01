@@ -14,6 +14,7 @@
 #include "saveLoad.h"
 
 
+module  _mdl = {0};
 module *mdl = NULL;
 plane  *pln = NULL;
 const float planePadding = 12*fingerUnit; // arbitrary
@@ -83,25 +84,28 @@ void initUiShader(void) {
 }
 
 void initPlane(void) {
-  glGenVertexArrays(1, &pln->vao);_glec
-  glBindVertexArray(pln->vao);_glec
-  glUseProgram(uiShader);_glec
-  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
   
   
+  //mdl = loadLastModule();
+  mdl = &_mdl;
   
-  mdl = loadLastModule();
+  pln = &mdl->plane;
   
-  //pln = &rootMod.plane;
-  /*
   pln->lineVertsSize =   0;
   pln->nodeVertsSize =   0;
   pln->lineVertsCap  = 120; // arbitrary
   pln->nodeVertsCap  =  60; // arbitrary
   pln->pos[0] = 0;
   pln->pos[1] = 0;
-  */
+  
+  
+  
+  
+  glGenVertexArrays(1, &pln->vao);_glec
+  glBindVertexArray(pln->vao);_glec
+  glUseProgram(uiShader);_glec
+  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
   
   

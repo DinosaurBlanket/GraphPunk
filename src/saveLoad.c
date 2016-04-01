@@ -17,7 +17,7 @@ typedef struct {
 } diskModuleHeader;
 //There are two chunks of data following the header, 
 //  the planeElems(nodes and ports), same as in-memory
-//  the rects(xyxy, bl-tr) of each planeElem, 1/4 of whats in-memory(vertData)
+//  the positions(xy, bl) of each planeElem, 1/8 of what's in-memory(vertData)
 
 
 
@@ -57,8 +57,11 @@ const planeElem lastModulePlaneElems[4] = {
     .p.pos  = 1
   }
 };
-const float lastModuleRects[] = {
-  0
+const float lastModulePositions[] = {
+  16,16,
+  16,32,
+  16, 0,
+  32, 0
 };
 module *lastModule = NULL;
 
@@ -85,5 +88,6 @@ void loadPlaneVerts(module *m) {
 void save(void) {}
 
 void exitSave(void) {
-  free(lastModule);
+  //fr(i,moduleCount) {free(allModules[i])};
+  free(allModules);
 }
