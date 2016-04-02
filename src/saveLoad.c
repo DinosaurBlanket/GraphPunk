@@ -10,10 +10,11 @@
 
 
 typedef struct {
-  uint32_t moduleId;
-  uint32_t parentModuleId;
-  uint32_t planeElemCount;
-  float    planePos[2];
+  uint32_t      moduleId;
+  uint32_t      parentId;
+  uint32_t      planeElemCount;
+  float         planePos[2];
+  moduleToggles toggles;
 } diskModuleHeader;
 //There are two chunks of data following the header, 
 //  the planeElems(nodes and ports), same as in-memory
@@ -25,7 +26,7 @@ typedef struct {
 #define lastModuleId 4040 // arbitrary
 const diskModuleHeader lastModuleHeader = {
   .moduleId       = lastModuleId,
-  .parentModuleId = 0,
+  .parentId       = 0,
   .planeElemCount = 4,
   .planePos       = {0,0}
 };
@@ -63,31 +64,30 @@ const float lastModulePositions[] = {
   16, 0,
   32, 0
 };
-module *lastModule = NULL;
 
-module  **allModules  = NULL;
-uint32_t  moduleCount = 0;
 
-void saveLoadInit(void) {
-  
-}
+
+
+
+mem     allModules;
+module *lastModule  = NULL;
+
 
 module *loadModule(uint32_t moduleId) {
-  // init lastModule...
   
-  return lastModule;
-}
-module *loadLastModule(void) {
-  return loadModule(lastModuleId);
 }
 
-void loadPlaneVerts(module *m) {
-  // fills m->plane.vertdata from rect data off disk (lastModuleRects)
+void saveLoadInit(void) {
+  // get the lastModuleId...
+  lastModule = loadModule(lastModuleId);
+}
+
+module *getLastModule(void) {
+  return lastModule;
 }
 
 void save(void) {}
 
-void exitSave(void) {
-  //fr(i,moduleCount) {free(allModules[i])};
-  free(allModules);
+void saveLoadExit(void) {
+  memFree(&allModules);
 }

@@ -12,6 +12,7 @@
 #include "globalControls.h"
 #include "module.h"
 #include "saveLoad.h"
+#include "misc.h"
 
 
 module  _mdl = {0};
@@ -172,6 +173,7 @@ void initPlane(void) {
 
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
+  saveLoadInit();
   initUiShader();
   initPlane();
   initGc();

@@ -6,11 +6,8 @@
 #include <GL/glew.h>
 #include "error.h"
 #include "forUi.h"
+#include "misc.h"
 
-bool allEq(const float *l, const float *r, int c) {
-  fr(i,c) {if (l[i] != r[i]) return false;}
-  return true;
-}
 
 float halfVideoSize_2[2];
 

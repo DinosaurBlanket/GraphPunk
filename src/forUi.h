@@ -1,7 +1,4 @@
 
-#define fr(i, bound) for (int i = 0; i < (bound); i++)
-bool allEq(const float *l, const float *r, int c);
-
 #define fingerUnit 16
 extern float halfVideoSize_2[2];
 

@@ -2,6 +2,7 @@
 
 #define  GLEW_STATIC
 #include <GL/glew.h>
+#include "misc.h"
 
 typedef enum {
   aid_add,
@@ -47,18 +48,16 @@ typedef union {
 typedef struct {
   float      rect[4];       // borders of plane
   float      pos[2];        // only used when changing planes
-  planeElem *planeElems;    // malloced, parallel with vertData
-  uint32_t   planeElemCount;
-  uint32_t   planeElemCap;
+  mem        planeElems;    // parallel with node vertData
+  float     *vertData;      // GL buffer storage
+  uint32_t  *indxData;      // GL buffer storage
+  uint32_t   lineVertsSize; // float count
+  uint32_t   lineVertsCap;  // float cap
+  uint32_t   nodeVertsSize; // float count, 16 floats(4 verts) per planeElem
+  uint32_t   nodeVertsCap;  // float cap
   GLuint     vao;
   GLuint     vbo;
   GLuint     ebo;
-  float     *vertData;
-  uint32_t  *indxData;
-  uint32_t   lineVertsSize; // in elements (floats)
-  uint32_t   lineVertsCap;  // in elements (floats)
-  uint32_t   nodeVertsSize; // in elements (ints), a rect for each planeElem
-  uint32_t   nodeVertsCap;  // in elements (ints), a rect for each planeElem
 } plane;
 // first verts of every plane are for background
 #define backVertsSize 48 // in elements, 12 vertices, 48 floats
@@ -67,9 +66,17 @@ uint32_t planeVertDataSize(plane *p);
 uint32_t planeElemDataSize(plane *p);
 // Module faces are drawn separately
 typedef struct {
+  bool paused;
+  bool audioSoloed;
+  bool audioDisabled;
+  bool videoDisabled;
+  bool frozen;
+} moduleToggles;
+typedef struct {
   uint32_t        moduleId;
   struct module  *parent;
   float           faceRect[4];
+  moduleToggles   toggles;
   plane           plane;
   //exnode *exnodes;
   // *specialNodes;

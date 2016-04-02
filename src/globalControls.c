@@ -7,6 +7,8 @@
 #include "error.h"
 #include "uitex.h"
 #include "forUi.h"
+#include "misc.h"
+
 
 const float butSide = 2*fingerUnit;
 float  wholeRect[4];
