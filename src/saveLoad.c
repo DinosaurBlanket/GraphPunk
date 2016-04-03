@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "module.h"
 
 //on disk there is:
@@ -23,14 +24,13 @@ typedef struct {
 
 
 // temorary declarations for data that will later come from a file
-#define lastModuleId 4040 // arbitrary
-const diskModuleHeader lastModuleHeader = {
-  .moduleId       = lastModuleId,
+const diskModuleHeader lastModHeader = {
+  .moduleId       = rootModId,
   .parentId       = 0,
   .planeElemCount = 4,
   .planePos       = {0,0}
 };
-const planeElem lastModulePlaneElems[4] = {
+const planeElem lastModPlaneElems[4] = {
   {
     .n.pei       = pei_aface,
     .n.oputCount = 1,
@@ -58,7 +58,7 @@ const planeElem lastModulePlaneElems[4] = {
     .p.pos  = 1
   }
 };
-const float lastModulePositions[] = {
+const float lastModPlaneElemPositions[] = {
   16,16,
   16,32,
   16, 0,
@@ -69,25 +69,52 @@ const float lastModulePositions[] = {
 
 
 
-mem     allModules;
-module *lastModule  = NULL;
 
 
-module *loadModule(uint32_t moduleId) {
+module root = {
+  .id       = rootModId,
+  .parent   = NULL,
+  .toggles  = {0},
+  .faceRect = {0}
+};
+
+module *loadModules(uint32_t id) {
+  module *m;
+  if (id != rootModId) {
+    // m = malloc module
+    // load module data from disk
+    // initialize id, parent, toggles, faceRect
+  }
+  else m = &root;
   
+  // initialize some critical plane data
+  m->plane.planeElemCount = lastModHeader.planeElemCount;
+  if (!lastModHeader.planeElemCount) {
+    m->plane.planeElemCap = 0;
+    m->plane.planeElems = NULL;
+    return m;
+  }
+  m->plane.planeElemCap = nextHighestPO2(lastModHeader.planeElemCount);
+  m->plane.planeElems = malloc(m->plane.planeElemCap*sizeof(planeElem));
+  fr(i, m->plane.planeElemCount) {
+    m->plane.planeElems[i] = lastModPlaneElems[i];
+    if (m->plane.planeElems[i].pei == pei_mface) {
+      m->plane.planeElems[i].n.module = (struct module*)loadModules(m->plane.planeElems[i].n.id); // why the hell do i need to cast this??
+    }
+    // fill vert data from lastModPlaneElemPositions
+    
+  }
+  return m;
 }
 
-void saveLoadInit(void) {
-  // get the lastModuleId...
-  lastModule = loadModule(lastModuleId);
+// returns module you were in you last closed ...for now that will be root
+module *saveLoadInit(void) {
+  loadModules(rootModId);
+  return &root;
 }
 
-module *getLastModule(void) {
-  return lastModule;
-}
+void save(module *curModule) {}
 
-void save(void) {}
-
-void saveLoadExit(void) {
-  memFree(&allModules);
+void saveLoadExit(module *curModule) {
+  // traverse module tree and free from bottom up
 }

@@ -1,6 +1,7 @@
 
-module *loadModule(uint32_t moduleId); // also loads parents and needed branches
-void saveLoadInit(void);
-module *getLastModule(void);
-void save(void);
-void saveLoadExit(void);
+module *loadModules(uint32_t id);
+module *saveLoadInit(void);
+void save(module *curModule);
+void saveLoadExit(module *curModule);
+
+extern module root;

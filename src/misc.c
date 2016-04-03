@@ -5,19 +5,10 @@ bool allEq(const float *l, const float *r, int c) {
   return true;
 }
 
-#define memMinCap 4
-
-void memAppend(mem *m, uint32_t size) {
-  if (m->cap < memMinCap) m->cap = memMinCap;
-  m->size += size;
-  if (m->size <= m->cap) return;
-  while (m->size > m->cap) m->cap *= 2;
-  if (!m->data) m->data = malloc(m->size);
-  else m->data = realloc(m->data, m->size);
-}
-
-void memFree(mem *m) {
-  free(m->data);
-  m->size = 0;
-  m->cap  = 0;
+uint32_t nextHighestPO2(const uint32_t n) {
+  const uint32_t max = 0xffffffff;
+  for (uint32_t i = 1; i <= max; i <<= 1) {
+    if (i > n) return i;
+  }
+  return max;
 }

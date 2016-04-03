@@ -15,7 +15,6 @@
 #include "misc.h"
 
 
-module  _mdl = {0};
 module *mdl = NULL;
 plane  *pln = NULL;
 const float planePadding = 12*fingerUnit; // arbitrary
@@ -88,8 +87,6 @@ void initPlane(void) {
   
   
   
-  //mdl = loadLastModule();
-  mdl = &_mdl;
   
   pln = &mdl->plane;
   
@@ -173,7 +170,7 @@ void initPlane(void) {
 
 void initRoot(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
-  saveLoadInit();
+  mdl = saveLoadInit();
   initUiShader();
   initPlane();
   initGc();
