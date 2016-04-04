@@ -89,50 +89,17 @@ void initPlane(void) {
   
   
   pln = &mdl->plane;
-  
-  pln->lineVertsSize =   0;
-  pln->nodeVertsSize =   0;
-  pln->lineVertsCap  = 120; // arbitrary
-  pln->nodeVertsCap  =  60; // arbitrary
-  pln->pos[0] = 0;
-  pln->pos[1] = 0;
-  
-  
-  
-  
-  glGenVertexArrays(1, &pln->vao);_glec
   glBindVertexArray(pln->vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
   
   
+  // vertData glBufferStorage allocation used to be here
   
-  
-  glGenBuffers(1, &pln->vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
-  glBindBuffer(GL_ARRAY_BUFFER, pln->vbo);_glec
-  GLbitfield bufferStorageFlags = 
-    GL_MAP_WRITE_BIT      | 
-    GL_MAP_PERSISTENT_BIT | 
-    GL_MAP_COHERENT_BIT
-  ;
-  uint32_t bufSize = planeVertDataSize(pln);
-  glBufferStorage(
-    GL_ARRAY_BUFFER,    // GLenum        target
-    bufSize,            // GLsizeiptr    size​
-    0,                  // const GLvoid *data​
-    bufferStorageFlags  // GLbitfield    flags​
-  );_glec
-  pln->vertData = glMapBufferRange(
-    GL_ARRAY_BUFFER,    // GLenum     target​
-    0,                  // GLintptr   offset​
-    bufSize,            // GLsizeiptr length​
-    bufferStorageFlags  // GLbitfield access
-  );_glec
   
   glGenBuffers(1, &pln->ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
-  bufSize = planeElemDataSize(pln);
+  uint32_t bufSize = nextHighestPO2((backElemsSize + (6*pln->planeElemCap)) * sizeof(uint32_t));
   glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
   pln->indxData = glMapBufferRange(
     GL_ELEMENT_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags

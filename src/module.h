@@ -23,19 +23,20 @@ typedef enum {dt_n, dt_b, dt_na, dt_ba} dtype;
 
 typedef struct {
   planeElemId    pei;
-  uint8_t        oputCount; // ports are in the same planeElem array following this node
-  uint8_t        iputCount; // ports are in the same planeElem array following this node
+  uint8_t        oputCount; // oports are in the same planeElem array following this node
+  uint8_t        iputCount; // iports follow the oports
   uint32_t       lineVerts; // offset into plane's vert data, 1 line per iput, both ends of line
   uint32_t       id;        // if id > rootModId, it's a moduleId
-  struct module *module;    // if NULL, it's not a module
+  struct module *module;    // this will NULL for all atoms
 } vinode;
 // a node's ports always follow the node in the planeElems array
 
 typedef struct {
   planeElemId pei;
   dtype       type;
-  uint32_t    node; // offset into plane's planeElems array
   uint8_t     pos;  // 0 is leftmost port, 1 is 2nd leftmost port, etc.
+  uint32_t    node; // offset into planeElems array
+  uint32_t    oput; // for iport, planeElem offset of connected oport, otheriwse 0
 } port;
 
 typedef union {
@@ -45,26 +46,23 @@ typedef union {
 } planeElem;
 
 typedef struct {
-  float      rect[4];       // borders of plane
-  float      pos[2];        // only used when changing planes
-  planeElem *planeElems;    // parallel with node vertData
-  uint32_t   planeElemCount;// parallel with node vertData
-  uint32_t   planeElemCap;  // parallel with node vertData
-  float     *vertData;      // GL buffer storage
-  uint32_t  *indxData;      // GL buffer storage
-  uint32_t   lineVertsSize; // float count
-  uint32_t   lineVertsCap;  // float cap
-  uint32_t   nodeVertsSize; // float count, 16 floats(4 verts) per planeElem
-  uint32_t   nodeVertsCap;  // float cap
+  float      rect[4];         // borders of plane
+  float      pos[2];          // only used when changing planes
+  planeElem *planeElems;
+  uint32_t   planeElemCount;
+  uint32_t   planeElemCap;
+  float     *vertData;        // GL buffer storage, 16 floats(4 verts) per planeElem
+  uint32_t  *indxData;        // GL buffer storage,  6 ints per planeElem
+  uint32_t   nodeVertsOffset; // float count
   GLuint     vao;
   GLuint     vbo;
   GLuint     ebo;
 } plane;
 // first verts of every plane are for background
-#define backVertsSize 48 // in elements, 12 vertices, 48 floats
-#define backElemsSize 36 // in elements (ints)
-uint32_t planeVertDataSize(plane *p);
-uint32_t planeElemDataSize(plane *p);
+#define backVertsSize 48 // floats, 12 vertices
+#define backElemsSize 36 // uint32s
+// background verts are followed by line verts
+
 // Module faces are drawn separately
 typedef struct {
   bool paused;

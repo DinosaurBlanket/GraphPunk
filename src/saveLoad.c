@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#include "error.h"
 #include "module.h"
+#include "forUi.h"
 
 //on disk there is:
 //  a folder of module files named after their moduleID,
@@ -80,30 +83,42 @@ module root = {
 
 module *loadModules(uint32_t id) {
   module *m;
-  if (id != rootModId) {
+  if (id == rootModId) m = &root;
+  else {
     // m = malloc module
     // load module data from disk
     // initialize id, parent, toggles, faceRect
   }
-  else m = &root;
+  plane *p = &m->plane;
   
   // initialize some critical plane data
-  m->plane.planeElemCount = lastModHeader.planeElemCount;
+  p->planeElemCount = lastModHeader.planeElemCount;
   if (!lastModHeader.planeElemCount) {
-    m->plane.planeElemCap = 0;
-    m->plane.planeElems = NULL;
+    p->planeElemCap = 0;
+    p->planeElems   = NULL;
     return m;
   }
-  m->plane.planeElemCap = nextHighestPO2(lastModHeader.planeElemCount);
-  m->plane.planeElems = malloc(m->plane.planeElemCap*sizeof(planeElem));
-  fr(i, m->plane.planeElemCount) {
-    m->plane.planeElems[i] = lastModPlaneElems[i];
-    if (m->plane.planeElems[i].pei == pei_mface) {
-      m->plane.planeElems[i].n.module = (struct module*)loadModules(m->plane.planeElems[i].n.id); // why the hell do i need to cast this??
+  p->planeElemCap = nextHighestPO2(lastModHeader.planeElemCount);
+  
+  glGenVertexArrays(1, &p->vao);_glec
+  glBindVertexArray(p->vao);_glec
+  glGenBuffers(1, &p->vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
+  glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
+  uint32_t bufSize = nextHighestPO2((backVertsSize + (p->planeElemCap*16)) * sizeof(float));
+  glBufferStorage(GL_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
+  p->vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
+  
+  p->planeElems = malloc(p->planeElemCap*sizeof(planeElem));
+  fr(i, p->planeElemCount) {
+    p->planeElems[i] = lastModPlaneElems[i];
+    if (p->planeElems[i].pei == pei_mface) {
+      p->planeElems[i].n.module = (struct module*)loadModules(p->planeElems[i].n.id); // why the hell do i need to cast this??
     }
-    // fill vert data from lastModPlaneElemPositions
-    
+    p->vertData[16*i    ] = lastModPlaneElemPositions[2*i];
+    p->vertData[16*i + 1] = lastModPlaneElemPositions[2*i + 1];
   }
+  
   return m;
 }
 

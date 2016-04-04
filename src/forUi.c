@@ -80,3 +80,9 @@ void setUiVertAttribs(void) {
     attr_texCoord, 2, GL_FLOAT, GL_FALSE, 16, (const GLvoid*)8
   );_glec
 }
+
+const GLbitfield bufferStorageFlags = 
+  GL_MAP_WRITE_BIT      | 
+  GL_MAP_PERSISTENT_BIT | 
+  GL_MAP_COHERENT_BIT
+;

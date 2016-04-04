@@ -1,3 +1,4 @@
+#pragma once
 
 #define fingerUnit 16
 extern float halfVideoSize_2[2];
@@ -22,3 +23,5 @@ extern GLuint uiShader;
 extern GLint  unif_scroll;
 extern GLint  unif_halfVideoSize;
 extern GLuint uiTex;
+
+extern const GLbitfield bufferStorageFlags;
