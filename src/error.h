@@ -18,3 +18,6 @@
 #else
   #define _glec
 #endif
+
+#define _SHOULD_NOT_BE_HERE_ \
+  printf("!! SHOULD NOT BE HERE: line %i of %s\n", __LINE__, __FILE__)

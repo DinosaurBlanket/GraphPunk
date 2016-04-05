@@ -45,20 +45,23 @@ const planeElem lastModPlaneElems[4] = {
   {
     .p.pei  = pei_oport,
     .p.type = dt_n,
+    .p.pos  = 0,
     .p.node = 0,
-    .p.pos  = 0
+    .p.ocon = 0
   },
   {
     .p.pei  = pei_iport,
     .p.type = dt_n,
+    .p.pos  = 0,
     .p.node = 0,
-    .p.pos  = 0
+    .p.ocon = 0
   },
   {
     .p.pei  = pei_iport,
     .p.type = dt_n,
+    .p.pos  = 1,
     .p.node = 0,
-    .p.pos  = 1
+    .p.ocon = 0
   }
 };
 const float lastModPlaneElemPositions[] = {
@@ -100,16 +103,32 @@ module *loadModules(uint32_t id) {
   }
   p->planeElemCap = nextHighestPO2(lastModHeader.planeElemCount);
   
+  uint32_t lineCount = 0;
+  fr(i, p->planeElemCount) {
+    if (p->planeElems[i].pei == pei_iport && p->planeElems[i].p.ocon) {
+      lineCount++;
+    }
+  }
+  p->nodeVertsOffset = initialNodeVertsOffset;
+  while (
+    16*lineCount         > p->nodeVertsOffset - backVertsSize ||
+    16*p->planeElemCount > p->nodeVertsOffset
+  ) {
+    p->nodeVertsOffset = nextHighestPO2(p->nodeVertsOffset);
+  }
+  // first 1/2 of data is for background and lines, 2nd 1/2 is for planeElems
+  const uint32_t bufSize = 2 * p->nodeVertsOffset * sizeof(float);
+  
   glGenVertexArrays(1, &p->vao);_glec
   glBindVertexArray(p->vao);_glec
   glGenBuffers(1, &p->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
-  uint32_t bufSize = nextHighestPO2((backVertsSize + (p->planeElemCap*16)) * sizeof(float));
   glBufferStorage(GL_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
-  p->vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
   
+  p->vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
   p->planeElems = malloc(p->planeElemCap*sizeof(planeElem));
+  
   fr(i, p->planeElemCount) {
     p->planeElems[i] = lastModPlaneElems[i];
     if (p->planeElems[i].pei == pei_mface) {

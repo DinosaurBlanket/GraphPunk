@@ -36,7 +36,7 @@ typedef struct {
   dtype       type;
   uint8_t     pos;  // 0 is leftmost port, 1 is 2nd leftmost port, etc.
   uint32_t    node; // offset into planeElems array
-  uint32_t    oput; // for iport, planeElem offset of connected oport, otheriwse 0
+  uint32_t    ocon; // for iport, planeElem offset of connected oport, otheriwse 0
 } port;
 
 typedef union {
@@ -61,6 +61,7 @@ typedef struct {
 // first verts of every plane are for background
 #define backVertsSize 48 // floats, 12 vertices
 #define backElemsSize 36 // uint32s
+#define initialNodeVertsOffset 256 // floats, leaving that - backVertsSize for lineverts
 // background verts are followed by line verts
 
 // Module faces are drawn separately

@@ -105,9 +105,9 @@ void initPlane(void) {
     GL_ELEMENT_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags
   );_glec
   
-  // the first 8 verts are set by this function
+  // the first 8 verts for the background are set by this function
   resetPlaneRect();
-  // the next 4 are set below
+  // the next 4 for the center marker are set below
   float centerVerts[16];
   const float centerVertsRect[4] = {
     -fingerUnit, -fingerUnit, fingerUnit, fingerUnit
@@ -119,6 +119,19 @@ void initPlane(void) {
   for (int i = backVertsSize-16; i < backVertsSize; i++) {
     pln->vertData[i] = centerVerts[i-(backVertsSize-16)];
   }
+  // next is the lineVerts
+  
+  // then finally the nodeVerts
+  fr(i, pln->planeElemCount) {
+    switch(pln->planeElems[i].pei) {
+      case pei_iport:
+      case pei_oport:
+      case pei_aface:
+      case pei_mface:
+      default: _SHOULD_NOT_BE_HERE_;
+    }
+  }
+  
   
   // indx data
   const uint32_t backElems[backElemsSize] = {
