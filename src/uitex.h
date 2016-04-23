@@ -8,7 +8,6 @@
 
 // in normalized texture coordinates
 // global controls
-#define uitex_gc_buttonSide     (32.0f/uitex_size_x)
 #define uitex_gc_bl_x             0.0f
 #define uitex_gc_bl_y             0.0f
 #define uitex_gc_tr_x          (320.0f/uitex_size_x)

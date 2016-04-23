@@ -61,18 +61,3 @@ typedef union {
   numLit      numLit;
   numeral     numeral;
 } planeElem;
-
-
-typedef struct {
-  float      rect[4];         // borders of plane
-  float      pos[2];          // only used when changing planes
-  planeElem *planeElems;
-  uint32_t   planeElemCount;
-  uint32_t   planeElemCap;
-  float     *vertData;        // GL buffer storage, 16 floats(4 verts) per planeElem
-  uint32_t  *indxData;        // GL buffer storage,  6 ints per planeElem
-  uint32_t   nodeVertsOffset; // float count
-  GLuint     vao;
-  GLuint     vbo;
-  GLuint     ebo;
-} plane;
