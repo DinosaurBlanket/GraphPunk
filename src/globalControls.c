@@ -10,25 +10,41 @@
 #include "misc.h"
 
 
-const float butSide = 2*fingerUnit;
-float  wholeRect[4];
-typedef enum {
-  gcid_play, gcid_step, gcid_mute, gcid_solo, gcid_mvBr, gcid_lock,
-  gcid_up,   gcid_top,  gcid_back, gcid_frwd, gcid_save, gcid_count
-} gcid;
-const float uitexButCorners_nt[2*gcid_count] = {
-  uitex_gc_play_bl_x,     uitex_gc_play_bl_y,
-  uitex_gc_step_bl_x,     uitex_gc_step_bl_y,
-  uitex_gc_unmuted_bl_x,  uitex_gc_unmuted_bl_y,
-  uitex_gc_unsoloed_bl_x, uitex_gc_unsoloed_bl_y,
-  uitex_gc_moveNode_bl_x, uitex_gc_moveNode_bl_y,
-  uitex_gc_unLock_bl_x,   uitex_gc_unLock_bl_y,
-  uitex_gc_up_bl_x,       uitex_gc_up_bl_y,
-  uitex_gc_top_bl_x,      uitex_gc_top_bl_y,
-  uitex_gc_back_bl_x,     uitex_gc_back_bl_y,
-  uitex_gc_forward_bl_x,  uitex_gc_forward_bl_y,
-  uitex_gc_save_bl_x,     uitex_gc_save_bl_y
+#define butSide uitex_gc_buttonSide
+float wholeRect[4] = {
+  uitex_gc_bl_x, uitex_gc_bl_y, 
+  uitex_gc_tr_x, uitex_gc_tr_y
 };
+typedef enum {
+  gcid_play,
+  gcid_step,
+  gcid_compile,
+  gcid_vidZoom,
+  gcid_nodeZoom,
+  gcid_actBranch,
+  gcid_lock,
+  gcid_revert,
+  gcid_save,
+  gcid_exit, gcidCount
+} gcid;
+const float uitexButCorners_nt[2*gcidCount] = {
+  uitex_gc_play_bl_x,      uitex_gc_play_bl_y,
+  uitex_gc_step_bl_x,      uitex_gc_step_bl_y,
+  uitex_gc_compile_bl_x,   uitex_gc_compile_bl_y,
+  uitex_gc_vidZoom_bl_x,   uitex_gc_vidZoom_bl_y,
+  uitex_gc_nodeZoom_bl_x,  uitex_gc_nodeZoom_bl_y,
+  uitex_gc_actBranch_bl_x, uitex_gc_actBranch_bl_y,
+  uitex_gc_lock_bl_x,      uitex_gc_lock_bl_y,
+  uitex_gc_revert_bl_x,    uitex_gc_revert_bl_y,
+  uitex_gc_save_bl_x,      uitex_gc_save_bl_y,
+  uitex_gc_exit_bl_x,      uitex_gc_exit_bl_y
+};
+
+
+
+
+
+
 #define   vertsSize (16*gcid_count) // in elements
 #define   indxsSize ( 6*gcid_count) // in elements
 GLuint    vao = 0;
