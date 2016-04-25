@@ -104,9 +104,9 @@ void setUiVertAttribs(void) {
   );_glec
 }
 
-const GLbitfield bufferStorageFlags = 
-  GL_MAP_WRITE_BIT      | 
-  GL_MAP_PERSISTENT_BIT | 
+const GLbitfield bufferStorageFlags =
+  GL_MAP_WRITE_BIT      |
+  GL_MAP_PERSISTENT_BIT |
   GL_MAP_COHERENT_BIT
 ;
 
@@ -125,7 +125,7 @@ module *loadModules(uint32_t id) {
     // initialize id, parent, toggles, faceRect
   }
   plane *p = &m->plane;
-  
+
   // initialize some critical plane data
   p->planeElemCount = lastModHeader.planeElemCount;
   if (!lastModHeader.planeElemCount) {
@@ -134,7 +134,7 @@ module *loadModules(uint32_t id) {
     return m;
   }
   p->planeElemCap = nextHighestPO2(lastModHeader.planeElemCount);
-  
+
   uint32_t lineCount = 0;
   fr(i, p->planeElemCount) {
     if (p->planeElems[i].pei == pei_iport && p->planeElems[i].p.ocon) {
@@ -150,17 +150,17 @@ module *loadModules(uint32_t id) {
   }
   // first 1/2 of data is for background and lines, 2nd 1/2 is for planeElems
   const uint32_t bufSize = 2 * p->nodeVertsOffset * sizeof(float);
-  
+
   glGenVertexArrays(1, &p->vao);_glec
   glBindVertexArray(p->vao);_glec
   glGenBuffers(1, &p->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, p->vbo);_glec
   glBufferStorage(GL_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
-  
+
   p->vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
   p->planeElems = malloc(p->planeElemCap*sizeof(planeElem));
-  
+
   fr(i, p->planeElemCount) {
     p->planeElems[i] = lastModPlaneElems[i];
     if (p->planeElems[i].pei == pei_mface) {
@@ -169,7 +169,7 @@ module *loadModules(uint32_t id) {
     p->vertData[16*i    ] = lastModPlaneElemPositions[2*i];
     p->vertData[16*i + 1] = lastModPlaneElemPositions[2*i + 1];
   }
-  
+
   return m;
 }
 
@@ -181,7 +181,7 @@ module *loadModules(uint32_t id) {
 //#include "globalControls.h"
 #define butSide uitex_gc_buttonSide
 float wholeRect[4] = {
-  uitex_gc_bl_x, uitex_gc_bl_y, 
+  uitex_gc_bl_x, uitex_gc_bl_y,
   uitex_gc_tr_x, uitex_gc_tr_y
 };
 typedef enum {
@@ -340,7 +340,7 @@ void onSaveUp(void *data) {
   redrawGc = true;
 }
 bool pointIsInRect(const float point[2], const float rect[4]) {
-  return 
+  return
     point[0] > rect[0] &&
     point[0] < rect[2] &&
     point[1] > rect[1] &&
@@ -348,7 +348,7 @@ bool pointIsInRect(const float point[2], const float rect[4]) {
   ;
 }
 bool pointIsInVertRect(const float point[2], const float vertRect[16]) {
-  return 
+  return
     point[0] > vertRect[0] &&
     point[0] < vertRect[8] &&
     point[1] > vertRect[1] &&
@@ -403,12 +403,12 @@ void initGc(void) {
   glBindVertexArray(vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
-  
+
   glGenBuffers(1, &vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
-  GLbitfield bufferStorageFlags = 
-    GL_MAP_WRITE_BIT      | 
-    GL_MAP_PERSISTENT_BIT | 
+  GLbitfield bufferStorageFlags =
+    GL_MAP_WRITE_BIT      |
+    GL_MAP_PERSISTENT_BIT |
     GL_MAP_COHERENT_BIT
   ;
   glBufferStorage(
@@ -423,12 +423,12 @@ void initGc(void) {
     vertsSize*sizeof(float),
     bufferStorageFlags
   );_glec
-  
+
   wholeRect[0] = -butSide*(gcid_count/2.0f);
   wholeRect[1] = halfVideoSize_2[1] - butSide;
   wholeRect[2] =  butSide*(gcid_count/2.0f);
   wholeRect[3] = halfVideoSize_2[1];
-  
+
   float butRect[4];
   butRect[1] = wholeRect[1];
   butRect[3] = wholeRect[3];
@@ -445,7 +445,7 @@ void initGc(void) {
     uiElems[b].onDrag    = onDrags[b];
     uiElems[b].onClickUp = onClickUps[b];
   }
-  
+
   glGenBuffers(1, &ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
   glBufferStorage(
@@ -461,7 +461,7 @@ void initGc(void) {
     bufferStorageFlags
   );_glec
   setRectElems(indxData, 6*gcid_count);
-  
+
   setUiVertAttribs();
 }
 void drawGc(void) {
@@ -487,7 +487,7 @@ const float planePadding = 12*fingerUnit; // arbitrary
 void resetPlaneRect(void) {
   float halfPlaneSize[2];
   fr(i,2) {
-    halfPlaneSize[i] = 
+    halfPlaneSize[i] =
       ceil(halfVideoSize_2[i]/fingerUnit)*fingerUnit + planePadding
     ;
   }
@@ -498,29 +498,29 @@ void resetPlaneRect(void) {
   const float backVertData[32] = {
     // inside border
     // bl
-    pln->rect[0]+fingerUnit, pln->rect[1]+fingerUnit, 
+    pln->rect[0]+fingerUnit, pln->rect[1]+fingerUnit,
     uitex_ibord_bl_x, uitex_ibord_bl_y,
     // tl
-    pln->rect[0]+fingerUnit, pln->rect[3]-fingerUnit, 
+    pln->rect[0]+fingerUnit, pln->rect[3]-fingerUnit,
     uitex_ibord_tl_x, uitex_ibord_tl_y,
     // tr
-    pln->rect[2]-fingerUnit, pln->rect[3]-fingerUnit, 
+    pln->rect[2]-fingerUnit, pln->rect[3]-fingerUnit,
     uitex_ibord_tr_x, uitex_ibord_tr_y,
     // br
-    pln->rect[2]-fingerUnit, pln->rect[1]+fingerUnit, 
+    pln->rect[2]-fingerUnit, pln->rect[1]+fingerUnit,
     uitex_ibord_br_x, uitex_ibord_br_y,
     // outside border
     // bl
-    pln->rect[0], pln->rect[1], 
+    pln->rect[0], pln->rect[1],
     uitex_obord_bl_x, uitex_obord_bl_y,
     // tl
-    pln->rect[0], pln->rect[3], 
+    pln->rect[0], pln->rect[3],
     uitex_obord_tl_x, uitex_obord_tl_y,
     // tr
-    pln->rect[2], pln->rect[3], 
+    pln->rect[2], pln->rect[3],
     uitex_obord_tr_x, uitex_obord_tr_y,
     // br
-    pln->rect[2], pln->rect[1], 
+    pln->rect[2], pln->rect[1],
     uitex_obord_br_x, uitex_obord_br_y,
   };
   fr(i,32) {pln->vertData[i] = backVertData[i];}
@@ -528,8 +528,8 @@ void resetPlaneRect(void) {
 
 void initUiShader(void) {
   uiShader = createShaderProgram(
-    "src/vert.glsl", 
-    "src/frag.glsl", 
+    "src/vert.glsl",
+    "src/frag.glsl",
     "uiShader"
   );
   glUseProgram(uiShader);_glec
@@ -548,19 +548,19 @@ void initUiShader(void) {
 }
 
 void initPlane(void) {
-  
-  
-  
-  
+
+
+
+
   pln = &mdl->plane;
   glBindVertexArray(pln->vao);_glec
   glUseProgram(uiShader);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
-  
-  
+
+
   // vertData glBufferStorage allocation used to be here
-  
-  
+
+
   glGenBuffers(1, &pln->ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pln->ebo);_glec
   uint32_t bufSize = nextHighestPO2((backElemsSize + (6*pln->planeElemCap)) * sizeof(uint32_t));
@@ -568,7 +568,7 @@ void initPlane(void) {
   pln->indxData = glMapBufferRange(
     GL_ELEMENT_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags
   );_glec
-  
+
   // the first 8 verts for the background are set by this function
   resetPlaneRect();
   // the next 4 for the center marker are set below
@@ -584,7 +584,7 @@ void initPlane(void) {
     pln->vertData[i] = centerVerts[i-(backVertsSize-16)];
   }
   // next is the lineVerts
-  
+
   // then finally the nodeVerts
   fr(i, pln->planeElemCount) {
     switch(pln->planeElems[i].pei) {
@@ -595,8 +595,8 @@ void initPlane(void) {
       default: _SHOULD_NOT_BE_HERE_;
     }
   }
-  
-  
+
+
   // indx data
   const uint32_t backElems[backElemsSize] = {
     // inside border
@@ -608,11 +608,11 @@ void initPlane(void) {
   };
   fr(i,backElemsSize) {pln->indxData[i] = backElems[i];}
   setRectElems(&pln->indxData[backElemsSize], bufSize/sizeof(float));
-  
+
   setUiVertAttribs();
 }
 
-void initRoot(float videoSize_px2[2]) {
+void initUi(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
   mdl = saveLoadInit();
   initUiShader();
