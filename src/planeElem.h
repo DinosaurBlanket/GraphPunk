@@ -1,25 +1,12 @@
 #pragma once
 
-#define  GLEW_STATIC
-#include <GL/glew.h>
-#include "misc.h"
-
-typedef enum {
-  nid_add,
-  nid_sub,
-  nid_mul,
-  nid_div,
-  nodeIdCount
-} nodeIds;
-
-typedef enum {dt_num, dt_arr, dt_tex} dtype;
-
 typedef struct {
   uint8_t  pei;         // plane element id
   uint8_t  inletCount;  // cached here despite mirroring node definition
   uint16_t nid;         // node id
   uint32_t _unused32_;
-} nodeFace;
+} nodeBase;
+// the types, and perhaps other data are looked up from the node id
 
 typedef struct {
   uint8_t  pei;

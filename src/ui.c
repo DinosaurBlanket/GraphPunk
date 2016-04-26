@@ -1,4 +1,29 @@
 
+typedef enum {
+  nid_output,
+  nid_add,
+  nid_sub,
+  nid_mul,
+  nid_div,
+  nid_numlit,
+  nodeIdCount
+} nodeIds;
+
+typedef enum {dt_num, dt_arr, dt_tex} dtype;
+
+typedef union {
+  uint32_t       n; // nodeId
+  float          x; // x position, always follows nodeId
+  float          y; // y position, always follows x position
+  uint32_t       c; // index of child nodeId, one per inlet, follows y position
+  float          v; // literal number value, follows y position of numlit
+} nodeDataOnDisk;
+
+
+
+#include "planeElem.h"
+#include "pretendFile.h"
+
 #define fingerUnit 16
 float halfVideoSize_2[2] = {0};
 void printVerts(const float *vertData, int vertCount) {
@@ -54,29 +79,29 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
 
 
 
-float      planeRect[4];
-float      planePos[2];
-planeElem *planeElems;
-uint32_t   planeElemCount;
-uint32_t   planeElemCap;
-float     *vertData;       // GL buffer storage, 16 floats(4 verts) per rect
-uint32_t   vertDataCount;  // float count
-uint32_t  *indxData;       // GL buffer storage,  6 ints per rect
-uint32_t   indxDataCount;  // int count
-GLuint     vao;
-GLuint     vbo;
-GLuint     ebo;
-GLint      unif_scroll;
-GLint      unif_halfVideoSize;
+float      planeRect[4]   = {0};
+float      planePos[2]    = {0};
+planeElem *planeElems     = NULL;
+uint32_t   planeElemCount = 0;
+uint32_t   planeElemCap   = 0;
+float     *vertData       = NULL; // GL buffer, 16 floats(4 verts) per rect
+uint32_t   vertDataCount  = 0;;   // float count
+uint32_t  *indxData       = NULL; // GL buffer,  6 ints per rect
+uint32_t   indxDataCount  = 0;    // int count
+GLuint vao = 0;
+GLuint vbo = 0;
+GLuint ebo = 0;
+GLint unif_scroll = 0;
+GLint unif_halfVideoSize = 0;
 
 #define gcVertDataStart  0
 #define gcButtonCount   10
 #define gcVertDataCount (gcButtonCount*16)
 // there will be more fixed-size vert data later
 #define peVertDataStart   gcVertDataCount;
-#define peVertDataCount   ((vertDataCount/3)*2 - peVertDataStart)
-#define lineVertDataStart peVertDataStart + peVertDataCount
-#define lineVertDataCount (vertDataCount/3)
+#define peVertDataCount   ((vertDataCount/4)*3 - peVertDataStart)
+#define lineVertDataStart (peVertDataStart + peVertDataCount)
+#define lineVertDataCount (vertDataCount/4)
 
 
 void initUi(float videoSize_px2[2]) {
