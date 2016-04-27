@@ -57,3 +57,5 @@ nodeDataOnDisk pretendData[] = {
   {.y =  0.0},         //42
   {.v =   3.0}         //43
 };
+
+programFileHeader pretendProgramFileHeader = {43};

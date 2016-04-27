@@ -19,6 +19,9 @@ typedef union {
   float          v; // literal number value, follows y position of numlit
 } nodeDataOnDisk;
 
+typedef struct {
+  uint32_t  nodeDataCount;
+} programFileHeader;
 
 
 #include "planeElem.h"
@@ -103,8 +106,19 @@ GLint unif_halfVideoSize = 0;
 #define lineVertDataStart (peVertDataStart + peVertDataCount)
 #define lineVertDataCount (vertDataCount/4)
 
+nodeDataOnDisk *ndod = NULL;
+
+void initNdod(void) {
+  int count = pretendProgramFileHeader.nodeDataCount;
+  ndod = malloc(sizeof(nodeDataOnDisk)*count);
+  fr(i,count) {ndod[i] = pretendData[i]}
+}
+
 
 void initUi(float videoSize_px2[2]) {
+  
+  
+  
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
   
   GLuint uiShader;
@@ -133,4 +147,12 @@ void initUi(float videoSize_px2[2]) {
   
   vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
   planeElems = malloc(planeElemCap*sizeof(planeElem));
+}
+
+
+
+
+void exitUi(){
+  //write back to disk before freeing
+  free(ndod);
 }
