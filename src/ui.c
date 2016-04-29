@@ -96,8 +96,18 @@ void initUi(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
   
   loadProgram("pretendFile.punk");
-  
-  fr(i,2) {
+  int     ncount = programFileHeader.nodeDataCount;
+  nodeDef ndef = {0};
+  for(int i = 0; i < ncount;) {
+    getNodeDef(&ndef, ndod[i])
+    planeElemCount += 1/*face*/ + ndef.inletCount + def.extraPECount;
+    i += 2/*position*/ + ndef.inletCount;
+    switch(ndod[i]) {
+      case nid_numlit7: i += 1; // value
+    }
+  }
+  planeElemCap = nextHighestPO2(planeElemCount);
+  planeElems = malloc(sizeof(planeElem)*planeElemCap);
   
   
   GLuint uiShader;

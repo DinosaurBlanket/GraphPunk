@@ -1,12 +1,12 @@
 #pragma once
 
 typedef enum {
-  nid_output,
   nid_add,
   nid_sub,
   nid_mul,
   nid_div,
-  nid_numlit,
+  nid_numlit7, // displays 7 digits, including radix point, not including base
+  nid_output,
   nodeIdCount
 } nodeIds;
 
@@ -30,24 +30,14 @@ typedef struct {
 } programFileHeader;
 
 
-#define maxInletCount 30
+#define maxInletCount 28
 
 typedef struct {
+  uint8_t  extraPECount; // extra planeElem count
   uint8_t  outType;
   uint8_t  inletCount;
   uint8_t  inTypes[maxInletCount];
 } nodeDef;
 // face size should be taken from uitex_nodeFaces
 
-void getNodeDef(nodeDef *def, nodeId id) {
-  switch(id) {
-    case nid_add:
-      def.outType    = dt_num;
-      def.inletCount = 2;
-      def.inTypes[0] = dt_num;
-      def.inTypes[1] = dt_num;
-      return;
-    default:
-      
-  }
-}
+void getNodeDef(nodeDef *def, nodeId id);
