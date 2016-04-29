@@ -1,28 +1,4 @@
 
-typedef enum {
-  nid_output,
-  nid_add,
-  nid_sub,
-  nid_mul,
-  nid_div,
-  nid_numlit,
-  nodeIdCount
-} nodeIds;
-
-typedef enum {dt_num, dt_arr, dt_tex} dtype;
-
-typedef union {
-  uint32_t       n; // nodeId
-  float          x; // x position, always follows nodeId
-  float          y; // y position, always follows x position
-  uint32_t       c; // index of child nodeId, one per inlet, follows y position
-  float          v; // literal number value, follows y position of numlit
-} nodeDataOnDisk;
-
-typedef struct {
-  uint32_t  nodeDataCount;
-} programFileHeader;
-
 
 #include "planeElem.h"
 #include "pretendFile.h"
@@ -107,19 +83,22 @@ GLint unif_halfVideoSize = 0;
 #define lineVertDataCount (vertDataCount/4)
 
 nodeDataOnDisk *ndod = NULL;
+programFileHeader programFileHeader = {0};
 
-void initNdod(void) {
-  int count = pretendProgramFileHeader.nodeDataCount;
-  ndod = malloc(sizeof(nodeDataOnDisk)*count);
-  fr(i,count) {ndod[i] = pretendData[i]}
+void loadProgram(const char *path) {
+  programFileHeader = pretendProgramFileHeader;
+  ndod = malloc(sizeof(nodeDataOnDisk)*programFileHeader.nodeDataCount);
+  fr(i,programFileHeader.nodeDataCount) {ndod[i] = pretendData[i]}
 }
 
 
 void initUi(float videoSize_px2[2]) {
-  
-  
-  
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
+  
+  loadProgram("pretendFile.punk");
+  
+  fr(i,2) {
+  
   
   GLuint uiShader;
   GLuint uiTex;

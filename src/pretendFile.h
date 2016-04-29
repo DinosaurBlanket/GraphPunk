@@ -1,4 +1,6 @@
 
+#include "nodeDef.h"
+
 //0 output
 //1   add  : 200
 //2     sub  : 50
@@ -10,6 +12,7 @@
 //8         18
 //9         3
 
+programFileHeader pretendProgramFileHeader = {43};
 
 nodeDataOnDisk pretendData[] = {
   {.n = nid_output},   // 0
@@ -57,5 +60,3 @@ nodeDataOnDisk pretendData[] = {
   {.y =  0.0},         //42
   {.v =   3.0}         //43
 };
-
-programFileHeader pretendProgramFileHeader = {43};

@@ -1,5 +1,7 @@
 #pragma once
 
+#include nodeDef.h
+
 typedef struct {
   uint8_t  pei;         // plane element id
   uint8_t  inletCount;  // cached here despite mirroring node definition
