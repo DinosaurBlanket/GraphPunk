@@ -57,16 +57,17 @@ void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
 }
 
 
-
 float      planeRect[4]   = {0};
 float      planePos[2]    = {0};
 planeElem *planeElems     = NULL;
 uint32_t   planeElemCount = 0;
 uint32_t   planeElemCap   = 0;
 float     *vertData       = NULL; // GL buffer, 16 floats(4 verts) per rect
-uint32_t   vertDataCount  = 0;;   // float count
+uint32_t   vertDataCount  = 0;    // float count
+uint32_t   vertDataCap    = 0;
 uint32_t  *indxData       = NULL; // GL buffer,  6 ints per rect
 uint32_t   indxDataCount  = 0;    // int count
+uint32_t   indxDataCap    = 0;
 GLuint vao = 0;
 GLuint vbo = 0;
 GLuint ebo = 0;
@@ -76,11 +77,16 @@ GLint unif_halfVideoSize = 0;
 #define gcVertDataStart  0
 #define gcButtonCount   10
 #define gcVertDataCount (gcButtonCount*16)
+#define borderVertDataStart gcVertDataCount
+#define borderVertDataCount 32
 // there will be more fixed-size vert data later
-#define peVertDataStart   gcVertDataCount;
+#define peVertDataStart   (borderVertDataStart + borderVertDataCount);
 #define peVertDataCount   ((vertDataCount/4)*3 - peVertDataStart)
 #define lineVertDataStart (peVertDataStart + peVertDataCount)
 #define lineVertDataCount (vertDataCount/4)
+// draw order: lines -> border & planeElems -> global controls
+
+
 
 nodeDataOnDisk *ndod = NULL;
 programFileHeader programFileHeader = {0};
@@ -97,17 +103,14 @@ void initUi(float videoSize_px2[2]) {
   
   loadProgram("pretendFile.punk");
   int     ncount = programFileHeader.nodeDataCount;
-  nodeDef ndef = {0};
-  for(int i = 0; i < ncount;) {
+  nodeDef ndef   = {0};
+  for (int i = 0; i < ncount; i += ndef.ndodCount) {
     getNodeDef(&ndef, ndod[i])
-    planeElemCount += 1/*face*/ + ndef.inletCount + def.extraPECount;
-    i += 2/*position*/ + ndef.inletCount;
-    switch(ndod[i]) {
-      case nid_numlit7: i += 1; // value
-    }
+    planeElemCount += 1/*face*/ + ndef.inletCount + ndef.extraPECount;
   }
   planeElemCap = nextHighestPO2(planeElemCount);
   planeElems = malloc(sizeof(planeElem)*planeElemCap);
+  
   
   
   GLuint uiShader;

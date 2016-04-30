@@ -10,7 +10,7 @@ typedef enum {
   nodeIdCount
 } nodeIds;
 
-typedef enum {dt_num, dt_arr, dt_par, dt_tex } dtype;
+typedef enum {dt_num, dt_arr, dt_par, dt_tex, dt_noOut} dtype;
 typedef num_t double
 typedef struct {float   *data, uint32_t w, uint32_t h, uint16_t d} arr_t;
 typedef struct {uint8_t *data, uint32_t w, uint32_t h, uint16_t d} par_t;
@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct {
   uint8_t  extraPECount; // extra planeElem count
+  uint8_t  ndodCount;    // jump to next nodeId in nodeDataOnDisk array
   uint8_t  outType;
   uint8_t  inletCount;
   uint8_t  inTypes[maxInletCount];
