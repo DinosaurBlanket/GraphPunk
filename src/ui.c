@@ -64,6 +64,7 @@ uint32_t   planeElemCount = 0;
 uint32_t   planeElemCap   = 0;
 float     *vertData       = NULL; // GL buffer, 16 floats(4 verts) per rect
 uint32_t   vertDataCount  = 0;    // float count
+uint32_t   vertDataCap    = 0;    // float count
 uint32_t  *indxData       = NULL; // GL buffer,  6 ints per rect
 uint32_t   indxDataCount  = 0;    // int count
 uint32_t   indxDataCap    = 0;
@@ -72,6 +73,11 @@ GLuint vbo = 0;
 GLuint ebo = 0;
 GLint unif_scroll = 0;
 GLint unif_halfVideoSize = 0;
+const GLbitfield bufferStorageFlags =
+  GL_MAP_WRITE_BIT      |
+  GL_MAP_PERSISTENT_BIT |
+  GL_MAP_COHERENT_BIT
+;
 
 const uint32_t gcButtonCount       = 10;
 const uint32_t gcVertDataStart     =  0;
@@ -85,7 +91,46 @@ inline uint32_t lineVertDataStart(void) {
   return peVertDataStart + peVertDataCap();
 }
 inline uint32_t lineVertDataCap(void) {return planeElemCap*4;}
+// The line verts take 1/4 of the entire buffer size,
+// and planeElems take the other 3/4 - the fixed-size stuff in the beginning.
 // draw order: lines -> border & planeElems -> global controls
+
+void resizeBuffers(void) {
+  if (!planeElems) {
+    planeElems = malloc(sizeof(planeElem)*planeElemCap);
+  }
+  else {
+    // realloc
+  }
+  vertDataCap = nextHighestPO2(planeElemCap*16 + peVertDataStart + lineVertDataCap());
+  indxDataCap = (vertDataCap/2)*3;
+  if (!vertData) {
+    if (indxData) _SHOULD_NOT_BE_HERE_;
+    glBufferStorage(
+      GL_ARRAY_BUFFER,
+      bufSize,
+      0,
+      bufferStorageFlags
+    );_glec
+    vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
+    glBufferStorage(
+      GL_ELEMENT_ARRAY_BUFFER,
+      indxsSize*sizeof(uint32_t),
+      0,
+      bufferStorageFlags
+    );_glec
+    indxData = glMapBufferRange(
+      GL_ELEMENT_ARRAY_BUFFER,
+      0,
+      indxsSize*sizeof(uint32_t),
+      bufferStorageFlags
+    );_glec
+  }
+  else {
+    if (!indxData) _SHOULD_NOT_BE_HERE_;
+    // copy data to new, bigger buffers
+  }
+}
 
 
 
@@ -101,43 +146,36 @@ void loadProgram(const char *path) {
 
 void initUi(float videoSize_px2[2]) {
   fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
-  
-  loadProgram("pretendFile.punk");
-  int     ncount = programFileHeader.nodeDataCount;
-  nodeDef ndef   = {0};
-  for (int i = 0; i < ncount; i += ndef.ndodCount) {
-    getNodeDef(&ndef, ndod[i])
-    planeElemCount += 1/*face*/ + ndef.inletCount + ndef.extraPECount;
-  }
-  planeElemCap = nextHighestPO2(planeElemCount);
-  planeElems = malloc(sizeof(planeElem)*planeElemCap);
-  
   glGenVertexArrays(1, &vao);_glec
   glBindVertexArray(vao);_glec
-  const GLbitfield bufferStorageFlags =
-    GL_MAP_WRITE_BIT      |
-    GL_MAP_PERSISTENT_BIT |
-    GL_MAP_COHERENT_BIT
-  ;
-  int bufSize = nextHighestPO2(planeElemCap*16 + peVertDataStart + lineVertDataCount
   glGenBuffers(1, &vbo);_glec
   glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
-  glBufferStorage(GL_ARRAY_BUFFER, bufSize, 0, bufferStorageFlags);_glec
-  vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
   glGenBuffers(1, &ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
-  glBufferStorage(
-    GL_ELEMENT_ARRAY_BUFFER,
-    indxsSize*sizeof(uint32_t),
-    0,
-    bufferStorageFlags
-  );_glec
-  indxData = glMapBufferRange(
-    GL_ELEMENT_ARRAY_BUFFER,
-    0,
-    indxsSize*sizeof(uint32_t),
-    bufferStorageFlags
-  );_glec
+  
+  loadProgram("pretendFile.punk");
+  int     ndcount = programFileHeader.nodeDataCount;
+  nodeDef nddef   = {0};
+  for (int i = 0; i < ndcount; i += nddef.ndodCount) {
+    getNodeDef(&nddef, ndod[i].n);
+    planeElemCount += 1/*face*/ + nddef.inletCount + nddef.extraPECount;
+  }
+  planeElemCap = nextHighestPO2(planeElemCount);
+  resizeBuffers();
+  for (int i = 0; i < ndcount; i += nddef.ndodCount) {
+    nodeId nid = ndod[i].n;
+    getNodeDef(&nddef, nid);
+    switch(nid) {
+      case nid_add:
+      case nid_sub:
+      case nid_mul:
+      case nid_div:
+      case nid_numlit7:
+      case nid_output:
+      default:_SHOULD_NOT_BE_HERE_;
+    }
+  }
+  
   
   
   GLuint uiShader;
