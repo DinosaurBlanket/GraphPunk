@@ -179,8 +179,20 @@ void initUi(float videoSize_px2[2]) {
       case nid_mul:
       case nid_div:
         fr(i,2) {destRect_px[i] = ndod[ndodi+1+i].p;}
-        fr(i,2) {destRect_px[i+2] = destRect_px[i] + ;}
-        mapTexRectToVerts(&peVertData[planeElemi*16],
+        fr(i,2) {
+          destRect_px[i+2] =
+            destRect_px[i] + (
+              uitex_nodeFaces[
+                planeElemi*4 + i + 2
+              ] - uitex_nodeFaces[
+                planeElemi*4 + i
+              ]
+            )
+          ;
+        }
+        fr(i,4) {srcRect_nt[i] = uitex_nodeFaces[planeElemi*4 + i];}
+        mapTexRectToVerts(&peVertData[planeElemi*16], destRect_px, srcRect_nt);
+        break;
       case nid_numlit7:
       default:_SHOULD_NOT_BE_HERE_;
     }
