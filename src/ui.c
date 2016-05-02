@@ -19,7 +19,7 @@ cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
 void mapTexRectToVerts(
   float      *destVertData,
-  const float destRect_px[4], // grid units
+  const float destRect_px[4], // pixels
   const float srcRect_nt[4]   // normalized texture coordinates
 ) {
   // bl
@@ -162,16 +162,26 @@ void initUi(float videoSize_px2[2]) {
   }
   planeElemCap = nextHighestPO2(planeElemCount);
   resizeBuffers();
-  for (int i = 0; i < ndcount; i += nddef.ndodCount) {
-    nodeId nid = ndod[i].n;
+  for (
+    int ndodi = 0, int planeElemi;
+    ndodi < ndcount;
+    ndodi += nddef.ndodCount, planeElemi++
+  ) {
+    nodeId nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
+    float *peVertData = &vertData[peVertDataStart];
+    float destRect_px[4] = {0};
+    float srcRect_nt[4]  = {0};
     switch(nid) {
+      case nid_output:
       case nid_add:
       case nid_sub:
       case nid_mul:
       case nid_div:
+        fr(i,2) {destRect_px[i] = ndod[ndodi+1+i].p;}
+        fr(i,2) {destRect_px[i+2] = destRect_px[i] + ;}
+        mapTexRectToVerts(&peVertData[planeElemi*16],
       case nid_numlit7:
-      case nid_output:
       default:_SHOULD_NOT_BE_HERE_;
     }
   }
