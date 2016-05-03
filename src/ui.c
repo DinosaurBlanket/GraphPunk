@@ -19,29 +19,29 @@ cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
 void mapTexRectToVerts(
   float      *destVertData,
-  const float destRect_px[4], // pixels
+  const float destPos_px[2],     // bottom left position pixels
   const float srcRect_nt[4]   // normalized texture coordinates
 ) {
   // bl
-  destVertData[ 0] = destRect_px[0];
-  destVertData[ 1] = destRect_px[1];
-  destVertData[ 2] =  srcRect_nt[0];
-  destVertData[ 3] =  srcRect_nt[1];
+  destVertData[ 0] = destPos_px[0];
+  destVertData[ 1] = destPos_px[1];
+  destVertData[ 2] = srcRect_nt[0];
+  destVertData[ 3] = srcRect_nt[1];
   // tl
-  destVertData[ 4] = destRect_px[0];
-  destVertData[ 5] = destRect_px[3];
-  destVertData[ 6] =  srcRect_nt[0];
-  destVertData[ 7] =  srcRect_nt[3];
+  destVertData[ 4] = destPos_px[0];
+  destVertData[ 5] = destPos_px[1] + (srcRect_nt[3] - srcRect_nt[1]);
+  destVertData[ 6] = srcRect_nt[0];
+  destVertData[ 7] = srcRect_nt[3];
   // tr
-  destVertData[ 8] = destRect_px[2];
-  destVertData[ 9] = destRect_px[3];
-  destVertData[10] =  srcRect_nt[2];
-  destVertData[11] =  srcRect_nt[3];
+  destVertData[ 8] = destPos_px[0] + (srcRect_nt[2] - srcRect_nt[0]);
+  destVertData[ 9] = destPos_px[1] + (srcRect_nt[3] - srcRect_nt[1]);
+  destVertData[10] = srcRect_nt[2];
+  destVertData[11] = srcRect_nt[3];
   // br
-  destVertData[12] = destRect_px[2];
-  destVertData[13] = destRect_px[1];
-  destVertData[14] =  srcRect_nt[2];
-  destVertData[15] =  srcRect_nt[1];
+  destVertData[12] = destPos_px[0] + (srcRect_nt[2] - srcRect_nt[0]);
+  destVertData[13] = destPos_px[1];
+  destVertData[14] = srcRect_nt[2];
+  destVertData[15] = srcRect_nt[1];
 }
 void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
   uint32_t v = 0;
@@ -170,28 +170,17 @@ void initUi(float videoSize_px2[2]) {
     nodeId nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
     float *peVertData = &vertData[peVertDataStart];
-    float destRect_px[4] = {0};
-    float srcRect_nt[4]  = {0};
+    float destPos_px[2] = {0};
+    float srcRect_nt[4] = {0};
     switch(nid) {
       case nid_output:
       case nid_add:
       case nid_sub:
       case nid_mul:
       case nid_div:
-        fr(i,2) {destRect_px[i] = ndod[ndodi+1+i].p;}
-        fr(i,2) {
-          destRect_px[i+2] =
-            destRect_px[i] + (
-              uitex_nodeFaces[
-                planeElemi*4 + i + 2
-              ] - uitex_nodeFaces[
-                planeElemi*4 + i
-              ]
-            )
-          ;
-        }
+        fr(i,2) {destPos_px[i] = ndod[ndodi+1+i].p;}
         fr(i,4) {srcRect_nt[i] = uitex_nodeFaces[planeElemi*4 + i];}
-        mapTexRectToVerts(&peVertData[planeElemi*16], destRect_px, srcRect_nt);
+        mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
         break;
       case nid_numlit7:
       default:_SHOULD_NOT_BE_HERE_;
