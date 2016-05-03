@@ -2,6 +2,8 @@
 
 #include nodeDef.h
 
+// every planeElem is a just a rectangle in vertData
+
 typedef struct {
   uint8_t  pei;         // plane element id
   uint8_t  inletCount;  // cached here despite mirroring node definition

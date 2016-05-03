@@ -133,6 +133,48 @@ void resizeBuffers(void) {
 }
 
 
+const float planePadding = fingerUnit*12; // arbitrary
+void resetPlaneRect(void) {
+  for (int i = peVertDataStart, i < planeElemCount, i += 16) {
+    if (vertData[0] < planeRect[0]) planeRect[0] = vertData[0] - planePadding;
+    if (vertData[1] < planeRect[1]) planeRect[1] = vertData[1] - planePadding;
+    if (vertData[8] > planeRect[2]) planeRect[2] = vertData[8] + planePadding;
+    if (vertData[9] > planeRect[3]) planeRect[3] = vertData[9] + planePadding;
+  }
+  const float backVertData[borderVertDataCount] = {
+    // inside border
+    // bl
+    planeRect[0]+fingerUnit, planeRect[1]+fingerUnit,
+    uitex_borderColor, uitex_borderColor,
+    // tl
+    planeRect[0]+fingerUnit, planeRect[3]-fingerUnit,
+    uitex_borderColor, uitex_borderColor,
+    // tr
+    planeRect[2]-fingerUnit, planeRect[3]-fingerUnit,
+    uitex_borderColor, uitex_borderColor,
+    // br
+    planeRect[2]-fingerUnit, planeRect[1]+fingerUnit,
+    uitex_borderColor, uitex_borderColor,
+    // outside border
+    // bl
+    planeRect[0], planeRect[1],
+    uitex_borderColor, uitex_borderColor,
+    // tl
+    planeRect[0], planeRect[3],
+    uitex_borderColor, uitex_borderColor,
+    // tr
+    planeRect[2], planeRect[3],
+    uitex_borderColor, uitex_borderColor,
+    // br
+    planeRect[2], planeRect[1],
+    uitex_borderColor, uitex_borderColor,
+  };
+  fr(i,borderVertDataCount) {
+    vertData[borderVertDataCount+i] = backVertData[i];
+  }
+}
+
+
 void loadProgram(
   nodeDataOnDisk   *ndod,
   programFileHeader pgf,
@@ -262,12 +304,12 @@ void perFrame(void) {
     screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize_2[0];
     screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize_2[1];
     fr(i,2) {
-      if (screenCrnrs_4[i] < pln->rect[i]) {
-        newScroll_2[i] = pln->rect[i] + halfVideoSize_2[i];
+      if (screenCrnrs_4[i] < planeRect[i]) {
+        newScroll_2[i] = planeRect[i] + halfVideoSize_2[i];
         scrollVel_2[i] = 0;
       }
-      else if (screenCrnrs_4[i+2] > pln->rect[i+2]) {
-        newScroll_2[i] = pln->rect[i+2] - halfVideoSize_2[i];
+      else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
+        newScroll_2[i] = planeRect[i+2] - halfVideoSize_2[i];
         scrollVel_2[i] = 0;
       }
     }
@@ -275,7 +317,7 @@ void perFrame(void) {
   }
   if (redrawPlane || redrawGc) {
     if (redrawPlane) {
-      glBindVertexArray(pln->vao);_glec
+      glBindVertexArray(vao);_glec
       glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
       glDrawElements(GL_TRIANGLES, backElemsSize, GL_UNSIGNED_INT, 0);_glec
       redrawPlane = false;
