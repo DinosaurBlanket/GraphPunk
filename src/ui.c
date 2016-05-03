@@ -34,11 +34,11 @@ void mapTexRectToVerts(
   destVertData[ 7] = srcRect_nt[3];
   // tr
   destVertData[ 8] = destPos_px[0] + (srcRect_nt[2] - srcRect_nt[0]);
-  destVertData[ 9] = destPos_px[1] + (srcRect_nt[3] - srcRect_nt[1]);
+  destVertData[ 9] = destVertData[5];
   destVertData[10] = srcRect_nt[2];
   destVertData[11] = srcRect_nt[3];
   // br
-  destVertData[12] = destPos_px[0] + (srcRect_nt[2] - srcRect_nt[0]);
+  destVertData[12] = destVertData[8];
   destVertData[13] = destPos_px[1];
   destVertData[14] = srcRect_nt[2];
   destVertData[15] = srcRect_nt[1];
@@ -133,14 +133,14 @@ void resizeBuffers(void) {
 }
 
 
-
-nodeDataOnDisk *ndod = NULL;
-programFileHeader programFileHeader = {0};
-
-void loadProgram(const char *path) {
-  programFileHeader = pretendProgramFileHeader;
-  ndod = malloc(sizeof(nodeDataOnDisk)*programFileHeader.nodeDataCount);
-  fr(i,programFileHeader.nodeDataCount) {ndod[i] = pretendData[i]}
+void loadProgram(
+  nodeDataOnDisk   *ndod,
+  programFileHeader pgf,
+  const char       *path
+) {
+  pgf = pretendProgramFileHeader;
+  ndod = malloc(sizeof(nodeDataOnDisk)*pgf.nodeDataCount);
+  fr(i,pgf.nodeDataCount) {ndod[i] = pretendData[i]}
 }
 
 
@@ -153,7 +153,9 @@ void initUi(float videoSize_px2[2]) {
   glGenBuffers(1, &ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
   
-  loadProgram("pretendFile.punk");
+  nodeDataOnDisk *ndod = NULL;
+  programFileHeader pgf = {0};
+  loadProgram(ndod, &pgf, "pretendFile.punk");
   int     ndcount = programFileHeader.nodeDataCount;
   nodeDef nddef   = {0};
   for (int i = 0; i < ndcount; i += nddef.ndodCount) {
@@ -186,8 +188,10 @@ void initUi(float videoSize_px2[2]) {
       default:_SHOULD_NOT_BE_HERE_;
     }
   }
+  free(ndod);
   
-  
+  // look through positions to determine appropriate plane rect size then...
+  resetPlaneRect(void);
   
   GLuint uiShader;
   GLuint uiTex;
@@ -204,9 +208,87 @@ void initUi(float videoSize_px2[2]) {
 }
 
 
+float newCurs_3[3]       = {0}; // cursor state relative to screen
+float oldCurs_3[3]       = {0};
+float clickDnCurs_3[3]   = {0};
+float newScroll_2[2]     = {0}; // plane center to screen center difference
+float oldScroll_2[2]     = {0};
+float clickDnScroll_2[2] = {0};
+float scrollVel_2[2]     = {0};
+
+void onDragScroll(void *data) {
+  fr(i,2) {
+    newScroll_2[i] = clickDnScroll_2[i]-(clickDnCurs_3[i]-newCurs_3[i]);
+  }
+}
+void onClickUpScroll(void *data) {
+  fr(i,2) {scrollVel_2[i] = newCurs_3[i] - oldCurs_3[i];}
+}
+
+void corneredToCentered(float centered[2], const int cX, const int cY) {
+  centered[0] =  cX - halfVideoSize_2[0];
+  centered[1] = -cY + halfVideoSize_2[1];
+}
+
+void clickDn(int posX_px, int posY_px) {
+  corneredToCentered(newCurs_3, posX_px, posY_px);
+  newCurs_3[2] = 1.0f;
+  fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
+  fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
+  if (!onClickGc(newCurs_3)) {
+    fr(i,2) {scrollVel_2[i] = 0;}
+    onDrag    = onDragScroll;
+    onClickUp = onClickUpScroll;
+  }
+}
+void curMove(int posX_px, int posY_px) {
+  corneredToCentered(newCurs_3, posX_px, posY_px);
+  if (newCurs_3[2]) onDrag(NULL);
+}
+void clickUp(int posX_px, int posY_px) {
+  corneredToCentered(newCurs_3, posX_px, posY_px);
+  newCurs_3[2] = 0;
+  onClickUp(NULL);
+}
+
+float screenCrnrs_4[4]  = {0}; // xyxy, bl tr, relative to plane center
+bool redrawPlane = true;
+
+void perFrame(void) {
+  fr(i,2) {newScroll_2[i] += scrollVel_2[i];}
+  if (!allEq(newScroll_2, oldScroll_2, 2)) {
+    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize_2[0];
+    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize_2[1];
+    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize_2[0];
+    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize_2[1];
+    fr(i,2) {
+      if (screenCrnrs_4[i] < pln->rect[i]) {
+        newScroll_2[i] = pln->rect[i] + halfVideoSize_2[i];
+        scrollVel_2[i] = 0;
+      }
+      else if (screenCrnrs_4[i+2] > pln->rect[i+2]) {
+        newScroll_2[i] = pln->rect[i+2] - halfVideoSize_2[i];
+        scrollVel_2[i] = 0;
+      }
+    }
+    redrawPlane = true;
+  }
+  if (redrawPlane || redrawGc) {
+    if (redrawPlane) {
+      glBindVertexArray(pln->vao);_glec
+      glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
+      glDrawElements(GL_TRIANGLES, backElemsSize, GL_UNSIGNED_INT, 0);_glec
+      redrawPlane = false;
+    }
+    drawGc();
+  }
+  fr(i,3) {oldCurs_3[i] = newCurs_3[i];}
+  fr(i,2) {oldScroll_2[i] = newScroll_2[i];}
+  glFinish();
+}
 
 
 void exitUi(){
   //write back to disk before freeing
-  free(ndod);
+  free(planeElems);
 }
