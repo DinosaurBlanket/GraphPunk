@@ -135,12 +135,37 @@ void resizeBuffers(void) {
 
 const float planePadding = fingerUnit*12; // arbitrary
 void resetPlaneRect(void) {
-  for (int i = peVertDataStart, i < planeElemCount, i += 16) {
-    if (vertData[0] < planeRect[0]) planeRect[0] = vertData[0] - planePadding;
-    if (vertData[1] < planeRect[1]) planeRect[1] = vertData[1] - planePadding;
-    if (vertData[8] > planeRect[2]) planeRect[2] = vertData[8] + planePadding;
-    if (vertData[9] > planeRect[3]) planeRect[3] = vertData[9] + planePadding;
+  // start with the position of the first pe, doesn't matter what pe it is
+  planeRect[0] = vertData[peVertDataStart+0];
+  planeRect[1] = vertData[peVertDataStart+1];
+  planeRect[2] = vertData[peVertDataStart+8];
+  planeRect[3] = vertData[peVertDataStart+9];
+  // then stretch to include every other pe
+  for (int i = peVertDataStart; i < planeElemCount; i += 16) {
+    if (vertData[i+0] < planeRect[0]) planeRect[0] = vertData[i+0];
+    if (vertData[i+1] < planeRect[1]) planeRect[1] = vertData[i+1];
+    if (vertData[i+8] > planeRect[2]) planeRect[2] = vertData[i+8];
+    if (vertData[i+9] > planeRect[3]) planeRect[3] = vertData[i+9];
   }
+  // then add padding
+  planeRect[0] -= planePadding;
+  planeRect[1] -= planePadding;
+  planeRect[2] += planePadding;
+  planeRect[3] += planePadding;
+  // make sure it's big enough to fill the screen
+  const float planeSize[2] = {
+    planeRect[2] - planeRect[0],
+    planeRect[3] - planeRect[1]
+  };
+  if (planeSize[0] < videoSize_px2[0]) {
+    planeRect[0] -= videoSize_px2[0] - planeSize[0];
+    planeRect[2] += videoSize_px2[0] - planeSize[0];
+  }
+  if (planeSize[1] < videoSize_px2[1]) {
+    planeRect[1] -= videoSize_px2[1] - planeSize[1];
+    planeRect[3] += videoSize_px2[1] - planeSize[1];
+  }
+  // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
     // bl
@@ -232,7 +257,6 @@ void initUi(float videoSize_px2[2]) {
   }
   free(ndod);
   
-  // look through positions to determine appropriate plane rect size then...
   resetPlaneRect(void);
   
   GLuint uiShader;
