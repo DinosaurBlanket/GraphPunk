@@ -147,24 +147,15 @@ void resetPlaneRect(void) {
     if (vertData[i+8] > planeRect[2]) planeRect[2] = vertData[i+8];
     if (vertData[i+9] > planeRect[3]) planeRect[3] = vertData[i+9];
   }
-  // then add padding
-  planeRect[0] -= planePadding;
-  planeRect[1] -= planePadding;
-  planeRect[2] += planePadding;
-  planeRect[3] += planePadding;
-  // make sure it's big enough to fill the screen
-  const float planeSize[2] = {
-    planeRect[2] - planeRect[0],
-    planeRect[3] - planeRect[1]
-  };
-  if (planeSize[0] < videoSize_px2[0]) {
-    planeRect[0] -= videoSize_px2[0] - planeSize[0];
-    planeRect[2] += videoSize_px2[0] - planeSize[0];
-  }
-  if (planeSize[1] < videoSize_px2[1]) {
-    planeRect[1] -= videoSize_px2[1] - planeSize[1];
-    planeRect[3] += videoSize_px2[1] - planeSize[1];
-  }
+  // then add padding and make sure it's big enough to fill the screen
+  do {
+    planeRect[0] -= planePadding;
+    planeRect[2] += planePadding;
+  } while (planeRect[2] - planeRect[0] < videoSize_px2[0]);
+  do {
+    planeRect[1] -= planePadding;
+    planeRect[3] += planePadding;
+  } while (planeRect[3] - planeRect[1] < videoSize_px2[1]);
   // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
@@ -225,17 +216,14 @@ void initUi(float videoSize_px2[2]) {
   loadProgram(ndod, &pgf, "pretendFile.punk");
   int     ndcount = programFileHeader.nodeDataCount;
   nodeDef nddef   = {0};
-  for (int i = 0; i < ndcount; i += nddef.ndodCount) {
-    getNodeDef(&nddef, ndod[i].n);
+  for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
+    getNodeDef(&nddef, ndod[ndodi].n);
     planeElemCount += 1/*face*/ + nddef.inletCount + nddef.extraPECount;
   }
   planeElemCap = nextHighestPO2(planeElemCount);
   resizeBuffers();
-  for (
-    int ndodi = 0, int planeElemi;
-    ndodi < ndcount;
-    ndodi += nddef.ndodCount, planeElemi++
-  ) {
+  int planeElemi = 0;
+  for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
     nodeId nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
     float *peVertData = &vertData[peVertDataStart];
@@ -247,13 +235,18 @@ void initUi(float videoSize_px2[2]) {
       case nid_sub:
       case nid_mul:
       case nid_div:
+        // node face
         fr(i,2) {destPos_px[i] = ndod[ndodi+1+i].p;}
         fr(i,4) {srcRect_nt[i] = uitex_nodeFaces[planeElemi*4 + i];}
         mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+        planeElemi++;
+        // inlets
+        
         break;
       case nid_numlit7:
-      default:_SHOULD_NOT_BE_HERE_;
+      default: _SHOULD_NOT_BE_HERE_;
     }
+    if (planeElemCount > planeElemi) _SHOULD_NOT_BE_HERE_;
   }
   free(ndod);
   

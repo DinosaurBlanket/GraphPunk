@@ -29,7 +29,7 @@ typedef struct {
 } programFileHeader;
 
 
-#define maxInletCount 28
+#define maxInletCount 30
 
 typedef struct {
   uint8_t  extraPECount; // extra planeElem count
@@ -37,6 +37,7 @@ typedef struct {
   uint8_t  outType;
   uint8_t  inletCount;
   uint8_t  inTypes[maxInletCount];
+  uint8_t  inletPos[maxInletCount]; // from left, in fingerUnits
 } nodeDef;
 // face size should be taken from uitex_nodeFaces
 
