@@ -5,8 +5,8 @@ typedef enum {
   nid_sub,
   nid_mul,
   nid_div,
-  nid_numlit7, // displays 7 digits, including radix point, not including base
   nid_output,
+  nid_numlit7, // displays 7 digits, including radix point, not including base
   nodeIdCount
 } nodeIds;
 
