@@ -9,7 +9,7 @@ const float uitex_nodeFaces[] = {
   192.0f/uitex_size_x, 64.0f/uitex_size_y, 224.0f/uitex_size_x, 80.0f/uitex_size_y  // output
 };
 
-// this array must be parallel to dtype enum (4 floats per node, xyxy)
+// this array must be parallel to dtype enum (4 floats per inlet, xyxy)
 const float uitex_inletRects[] = {
   0.0f,               72.0f/uitex_size_y, 16.0f/uitex_size_x, 80.0f/uitex_size_y, // num
   16.0f/uitex_size_x, 72.0f/uitex_size_y, 32.0f/uitex_size_x, 80.0f/uitex_size_y, // array

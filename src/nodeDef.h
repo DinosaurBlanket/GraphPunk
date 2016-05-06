@@ -6,7 +6,7 @@ typedef enum {
   nid_mul,
   nid_div,
   nid_output,
-  nid_numlit7, // displays 7 digits, including radix point, not including base
+  nid_numlit8,
   nodeIdCount
 } nodeIds;
 
@@ -20,12 +20,14 @@ typedef struct {GLuint   tex,  uint32_t w, uint32_t h} dt_tex; // in pixels
 typedef union {
   uint32_t       n; // nodeId
   float          p; // x, y positions, always follow nodeId
-  uint32_t       c; // index of child nodeId, one per inlet, follows y position
+  uint32_t       c; // planeElem index of child nodeId, one per inlet, follows y position
   float          v; // literal number value, follows y position of numlit
 } nodeDataOnDisk;
+#define ndodChildStart 3
 
 typedef struct {
   uint32_t  nodeDataCount;
+  uint32_t  planeElemCount;
 } programFileHeader;
 
 

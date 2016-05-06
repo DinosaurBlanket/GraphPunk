@@ -13,6 +13,8 @@
 #define uitex_gc_tr_x          (320.0f/uitex_size_x)
 #define uitex_gc_tr_y           (64.0f/uitex_size_y)
 
-
 extern const float uitex_atomFaces[];
+
+#define uitex_portW 16
+#define uitex_portH  8
 extern const float uitex_inletRects[];

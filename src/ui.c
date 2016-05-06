@@ -192,14 +192,16 @@ void resetPlaneRect(void) {
 
 
 void loadProgram(
-  nodeDataOnDisk   *ndod,
-  programFileHeader pgf,
-  const char       *path
+  nodeDataOnDisk    *ndod,
+  programFileHeader *pgf,
+  const char        *path
 ) {
   pgf = pretendProgramFileHeader;
   ndod = malloc(sizeof(nodeDataOnDisk)*pgf.nodeDataCount);
   fr(i,pgf.nodeDataCount) {ndod[i] = pretendData[i]}
 }
+void unloadProgram(nodeDataOnDisk *ndod) {free(ndod);}
+
 
 
 void initUi(float videoSize_px2[2]) {
@@ -214,21 +216,19 @@ void initUi(float videoSize_px2[2]) {
   nodeDataOnDisk *ndod = NULL;
   programFileHeader pgf = {0};
   loadProgram(ndod, &pgf, "pretendFile.punk");
-  int     ndcount = programFileHeader.nodeDataCount;
-  nodeDef nddef   = {0};
-  for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
-    getNodeDef(&nddef, ndod[ndodi].n);
-    planeElemCount += 1/*face*/ + nddef.inletCount + nddef.extraPECount;
-  }
+  int ndcount     = programFileHeader.nodeDataCount;
+  planeElemCount  = programFileHeader.planeElemCount;
   planeElemCap = nextHighestPO2(planeElemCount);
   resizeBuffers();
+  nodeDef nddef = {0};
   int planeElemi = 0;
   for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
     nodeId nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
     float *peVertData = &vertData[peVertDataStart];
-    float destPos_px[2] = {0};
-    float srcRect_nt[4] = {0};
+    float nodeBasePos_px[2] = {0};
+    float destPos_px[2]     = {0};
+    float srcRect_nt[4]     = {0};
     switch(nid) {
       case nid_output:
       case nid_add:
@@ -236,19 +236,32 @@ void initUi(float videoSize_px2[2]) {
       case nid_mul:
       case nid_div:
         // node face
-        fr(i,2) {destPos_px[i] = ndod[ndodi+1+i].p;}
+        fr(i,2) {destPos_px[i] = nodeBasePos_px[i] = ndod[ndodi+1+i].p;}
         fr(i,4) {srcRect_nt[i] = uitex_nodeFaces[planeElemi*4 + i];}
         mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+        planeElems[planeElemi].nodeBase.pei = pei_nface;
+        planeElems[planeElemi].nodeBase.inletCount = nddef.inletCount;
+        planeElems[planeElemi].nodeBase.nid = nid;
         planeElemi++;
         // inlets
+        fr(i,nddef.inletCount) {
+          planeElems[planeElemi].inlet.pei    = pei_inlet;
+          planeElems[planeElemi].inlet.index  = i;
+          planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
+          planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
+          fr(j,2) {destPos_px[j] = ;}
+          fr(j,4) {srcRect_nt[j] = uitex_nodeFaces[planeElemi*4 + j];}
+          planeElemi++;
+        }
+        break;
+      case nid_numlit8:
         
         break;
-      case nid_numlit7:
       default: _SHOULD_NOT_BE_HERE_;
     }
     if (planeElemCount > planeElemi) _SHOULD_NOT_BE_HERE_;
   }
-  free(ndod);
+  unloadProgram(&ndod);
   
   resetPlaneRect(void);
   
