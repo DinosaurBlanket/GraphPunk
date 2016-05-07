@@ -11,6 +11,8 @@ void getNodeDef(nodeDef *def, nodeId id) {
       def->inletCount   = 2;
       def->inTypes[0]   = dt_num;
       def->inTypes[1]   = dt_num;
+      def->inletPos[0]  = 0;
+      def->inletPos[1]  = 1;
       def->extraPECount = 0;
       def->ndodCount    = 4;
       return;
@@ -24,6 +26,7 @@ void getNodeDef(nodeDef *def, nodeId id) {
       def->outType      = dt_noOut;
       def->inletCount   = 1;
       def->inTypes[0]   = dt_num;
+      def->inletPos[0]  = 0;
       def->extraPECount = 0;
       def->ndodCount    = 3;
       return;

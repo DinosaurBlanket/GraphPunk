@@ -245,12 +245,13 @@ void initUi(float videoSize_px2[2]) {
         planeElemi++;
         // inlets
         fr(i,nddef.inletCount) {
+          destPos_px[0] = nodeBasePos_px[0] + nddef.inletPos[i]*fingerUnit;
+          destPos_px[1] = nodeBasePos_px[1] - uitex_portH;
+          fr(j,4) {srcRect_nt[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
           planeElems[planeElemi].inlet.pei    = pei_inlet;
           planeElems[planeElemi].inlet.index  = i;
           planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
           planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
-          fr(j,2) {destPos_px[j] = ;}
-          fr(j,4) {srcRect_nt[j] = uitex_nodeFaces[planeElemi*4 + j];}
           planeElemi++;
         }
         break;
