@@ -8,13 +8,23 @@
 
 // in normalized texture coordinates
 // global controls
-#define uitex_gc_bl_x             0.0f
-#define uitex_gc_bl_y             0.0f
-#define uitex_gc_tr_x          (320.0f/uitex_size_x)
-#define uitex_gc_tr_y           (64.0f/uitex_size_y)
+extern const float uitex_gcRect[4];
 
-extern const float uitex_atomFaces[];
 
-#define uitex_portW 16
-#define uitex_portH  8
+#define uitex_portW (16.0f/uitex_size_x)
+#define uitex_portH  (8.0f/uitex_size_y)
 extern const float uitex_inletRects[];
+
+#define uitex_nmrlW (16.0f/uitex_size_x)
+#define uitex_nmrlH (16.0f/uitex_size_y)
+#define uitex_numLitBackcolor_x  0.0f
+#define uitex_numLitBackcolor_y  (64.0f/uitex_size_y)
+const float uitex_radixPointRect[4];
+const float uitex_negSignRect[4];
+const float uitex_nmrlRects[4];
+inline void uitex_nmrlRect(float rect[4], const uint32_t n);
+const float uitex_base10SignRect[4];
+const float uitex_base12SignRect[4];
+const float uitex_base16SignRect[4];
+
+extern const float uitex_nodeFaces[];
