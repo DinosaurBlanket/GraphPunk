@@ -265,7 +265,15 @@ void initUi(float videoSize_px2[2]) {
         planeElems[planeElemi].nodeBase.base  = 10;
         planeElems[planeElemi].nodeBase.value = ndod[ndodi+ndodNumLitValStart].v;
         planeElemi++;
-        
+        // just fill it with eights for now
+        uitex_nmrlRect(srcRect_nt, 8);
+        fr(i,8) {
+          mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+          planeElems[planeElemi].nodeBase.pei   = pei_numeric;
+          planeElems[planeElemi].nodeBase.value = 8;
+          destPos_px[0] += fingerUnit;
+          planeElemi++;
+        }
         break;
       default: _SHOULD_NOT_BE_HERE_;
     }

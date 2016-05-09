@@ -31,26 +31,34 @@ typedef struct {
   float    value;
 } numLit;
 
+
+typedef enum {
+  nmric_negative = 16,
+  nmric_radix,
+  nmric_base10,
+  nmric_base12,
+  nmric_base16
+} numerics;
 typedef struct {
   uint8_t  pei;
   uint8_t  _unused8_1;
   uint16_t _unused16_1;
-  uint8_t  value; // 0 to 15
+  uint8_t  value; // numeral value (0-15), or numerics value
   //uint8_t  _unused8_5;
   //uint16_t _unused16_3;
-} numeral;
+} numeric;
 
 
 typedef enum {
   pei_nface,    // node face, followed by inlets, if any
   pei_inlet,    // always follows a nodeface or it's lef-adjacent inlet
   pei_numLit,   // followed by numerals
-  pei_numeral   // follows anything that displays a number
+  pei_numeric   // follows anything that displays a number
 } planeElemId;
 typedef union {
   planeElemId pei;
   nodeFace    nface;
   inlet       inlet;
   numLit      numLit;
-  numeral     numeral;
+  numeric     numeric;
 } planeElem;
