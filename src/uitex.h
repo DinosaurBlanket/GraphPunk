@@ -11,14 +11,14 @@
 extern const float uitex_gcRect[4];
 
 
-#define uitex_portW (16.0f/uitex_size_x)
-#define uitex_portH  (8.0f/uitex_size_y)
+#define uitex_portW 16.0f
+#define uitex_portH  8.0f
 extern const float uitex_inletRects[];
 
-#define uitex_nmrlW (16.0f/uitex_size_x)
-#define uitex_nmrlH (16.0f/uitex_size_y)
+#define uitex_nmrlW  16.0f
+#define uitex_nmrlH  16.0f
 #define uitex_numLitBackcolor_x  0.0f
-#define uitex_numLitBackcolor_y  (64.0f/uitex_size_y)
+#define uitex_numLitBackcolor_y 64.0f
 const float uitex_radixPointRect[4];
 const float uitex_negSignRect[4];
 const float uitex_nmrlRects[4];
