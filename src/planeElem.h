@@ -8,7 +8,7 @@ typedef struct {
   uint8_t  pei;         // plane element id
   uint8_t  inletCount;  // cached here despite mirroring node definition
   uint16_t nid;         // node id
-  uint32_t _unused32_;
+  uint32_t _unused32_1;
 } nodeBase;
 // the types, and perhaps other data are looked up from the node id
 
@@ -16,7 +16,7 @@ typedef struct {
   uint8_t  pei;
   uint8_t  type;         // data type
   uint8_t  index;        // 0 is leftmost inlet,1 is second leftmost, etc.
-  uint8_t  _unused8_;
+  uint8_t  _unused8_3;
   uint32_t conode;       // offset into planeElems of connected node
 } inlet;
 // There is always one line per inlet, but any number per outlet.
@@ -25,17 +25,19 @@ typedef struct {
 
 typedef struct {
   uint8_t  pei;
-  uint8_t  numerCount; // this many numerals will follow in planeElem array
+  uint8_t  width; // this many additional planeElems will follow
   uint8_t  base;       // 2 to 15
-  uint8_t  _unused8_;
+  uint8_t  _unused8_3;
   float    value;
 } numLit;
 
 typedef struct {
   uint8_t  pei;
+  uint8_t  _unused8_1;
+  uint16_t _unused16_1;
   uint8_t  value; // 0 to 15
-  //uint16_t _unused16_;
-  //uint32_t _unused32_;
+  //uint8_t  _unused8_5;
+  //uint16_t _unused16_3;
 } numeral;
 
 

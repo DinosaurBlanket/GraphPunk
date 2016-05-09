@@ -16,10 +16,10 @@ void getNodeDef(nodeDef *def, nodeId id) {
       def->extraPECount = 0;
       def->ndodCount    = 4;
       return;
-    case nid_numlit8:
+    case nid_numlit_b10w08:
       def->outType      = dt_num;
       def->inletCount   = 0;
-      def->extraPECount = 8; // 7 for numerals, radix point, and sign, 1 for base
+      def->extraPECount = 8; // base 10, width 8
       def->ndodCount    = 3;
       return;
     case nid_output:

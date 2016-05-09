@@ -6,7 +6,7 @@ typedef enum {
   nid_mul,
   nid_div,
   nid_output,
-  nid_numlit8,
+  nid_numlit_b10w08,
   nodeIdCount
 } nodeIds;
 
@@ -24,6 +24,7 @@ typedef union {
   float          v; // literal number value, follows y position of numlit
 } nodeDataOnDisk;
 #define ndodChildStart 3
+#define ndodNumLitValStart 3
 
 typedef struct {
   uint32_t  nodeDataCount;

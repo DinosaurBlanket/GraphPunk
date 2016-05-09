@@ -244,7 +244,7 @@ void initUi(float videoSize_px2[2]) {
         planeElems[planeElemi].nodeBase.nid = nid;
         planeElemi++;
         // inlets
-        fr(i,nddef.inletCount) {
+        fr(i, nddef.inletCount) {
           destPos_px[0] = nodeBasePos_px[0] + nddef.inletPos[i]*fingerUnit;
           destPos_px[1] = nodeBasePos_px[1] - uitex_portH;
           fr(j,4) {srcRect_nt[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
@@ -255,7 +255,16 @@ void initUi(float videoSize_px2[2]) {
           planeElemi++;
         }
         break;
-      case nid_numlit8:
+      case nid_numlit_b10w08:
+        fr(i,2) {destPos_px[i] = nodeBasePos_px[i] = ndod[ndodi+1+i].p;}
+        srcRect_nt[0] = srcRect_nt[2] = uitex_numLitBackcolor_x;
+        srcRect_nt[1] = srcRect_nt[3] = uitex_numLitBackcolor_y;
+        mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+        planeElems[planeElemi].nodeBase.pei   = pei_numLit;
+        planeElems[planeElemi].nodeBase.width = nddef.extraPECount;
+        planeElems[planeElemi].nodeBase.base  = 10;
+        planeElems[planeElemi].nodeBase.value = ndod[ndodi+ndodNumLitValStart].v;
+        planeElemi++;
         
         break;
       default: _SHOULD_NOT_BE_HERE_;
