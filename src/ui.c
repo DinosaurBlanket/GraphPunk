@@ -212,6 +212,7 @@ void initUi(float videoSize_px2[2]) {
   glBindBuffer(GL_ARRAY_BUFFER, vbo);_glec
   glGenBuffers(1, &ebo);_glec
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);_glec
+  glClearColor(uitex_clearR, uitex_clearG, uitex_clearB, uitex_clearA);
   
   nodeDataOnDisk *ndod = NULL;
   programFileHeader pgf = {0};
@@ -283,8 +284,27 @@ void initUi(float videoSize_px2[2]) {
   
   resetPlaneRect(void);
   
-  GLuint uiShader;
+  
+  GLuint uiShader = createShaderProgram(
+    "src/vert.glsl",
+    "src/frag.glsl",
+    "uiShader"
+  );
+  glUseProgram(uiShader);_glec
+  unif_scroll        = glGetUniformLocation(uiShader, "scroll");_glec
+  unif_halfVideoSize = glGetUniformLocation(uiShader, "halfVideoSize");_glec
+  glUniform2f(unif_scroll, 0, 0);_glec
+  glUniform2f(unif_halfVideoSize, halfVideoSize_2[0], halfVideoSize_2[1]);_glec
   GLuint uiTex;
+  glGenTextures(1, &uiTex);_glec
+  glBindTexture(GL_TEXTURE_2D, uiTex);_glec
+  texFromBmp(uitex_path);
+  glUniform1i(glGetUniformLocation(uiShader, "tex"), 0);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);_glec
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);_glec
+  
   GLint attr_pos      = glGetAttribLocation(uiShader, "pos");_glec
   GLint attr_texCoord = glGetAttribLocation(uiShader, "texCoord");_glec
   glEnableVertexAttribArray(attr_pos);_glec
@@ -363,15 +383,16 @@ void perFrame(void) {
     }
     redrawPlane = true;
   }
-  if (redrawPlane || redrawGc) {
+  //if (redrawPlane || redrawGc) {
     if (redrawPlane) {
+      glClear();
       glBindVertexArray(vao);_glec
       glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
       glDrawElements(GL_TRIANGLES, backElemsSize, GL_UNSIGNED_INT, 0);_glec
       redrawPlane = false;
     }
-    drawGc();
-  }
+  //  drawGc();
+  //}
   fr(i,3) {oldCurs_3[i] = newCurs_3[i];}
   fr(i,2) {oldScroll_2[i] = newScroll_2[i];}
   glFinish();

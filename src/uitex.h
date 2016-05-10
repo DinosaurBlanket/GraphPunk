@@ -2,14 +2,17 @@
 
 #define uitex_path "img/uitex.bmp"
 
+#define uitex_clearR 0.1f
+#define uitex_clearG 0.1f
+#define uitex_clearB 0.1f
+#define uitex_clearA 1.0f
+
 // in pixels
 #define uitex_size_x  512.0f
 #define uitex_size_y  512.0f
 
-// in normalized texture coordinates
 // global controls
 extern const float uitex_gcRect[4];
-
 
 #define uitex_portW 16.0f
 #define uitex_portH  8.0f
