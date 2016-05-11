@@ -81,9 +81,13 @@ const GLbitfield bufferStorageFlags =
 
 const uint32_t gcButtonCount       = 10;
 const uint32_t gcVertDataStart     =  0;
+const uint32_t gcIndxDataStart     =  0;
 const uint32_t gcVertDataCount     = gcButtonCount*16;
+const uint32_t gcIndxDataCount     = gcButtonCount*6;
 const uint32_t borderVertDataStart = gcVertDataStart + gcVertDataCount;
+const uint32_t borderIndxDataStart = gcIndxDataStart + gcIndxDataCount;
 const uint32_t borderVertDataCount = 32;
+const uint32_t borderIndxDataCount = 24;
 // there will be more fixed-size vert data later
 const  uint32_t peVertDataStart = borderVertDataStart + borderVertDataCount;
 inline uint32_t peVertDataCap(void) {return planeElemCap*12 - peVertDataStart;}
@@ -112,7 +116,12 @@ void resizeBuffers(void) {
       0,
       bufferStorageFlags
     );_glec
-    vertData = glMapBufferRange(GL_ARRAY_BUFFER, 0, bufSize, bufferStorageFlags);_glec
+    vertData = glMapBufferRange(
+      GL_ARRAY_BUFFER,
+      0,
+      bufSize,
+      bufferStorageFlags
+    );_glec
     glBufferStorage(
       GL_ELEMENT_ARRAY_BUFFER,
       indxsSize*sizeof(uint32_t),
@@ -285,6 +294,19 @@ void initUi(float videoSize_px2[2]) {
   resetPlaneRect(void);
   
   
+  
+  // indx data
+  const uint32_t backElems[borderIndxDataCount] = {
+    4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3,
+  };
+  fr(i, borderIndxDataCount) {
+    indxData[i+borderIndxDataStart] = backElems[i];
+  }
+  setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount);
+  setRectElems(&indxData[peVertDataStart], planeElemCap*6);
+  
+  
+  
   GLuint uiShader = createShaderProgram(
     "src/vert.glsl",
     "src/frag.glsl",
@@ -386,9 +408,13 @@ void perFrame(void) {
   //if (redrawPlane || redrawGc) {
     if (redrawPlane) {
       glClear();
-      glBindVertexArray(vao);_glec
       glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
-      glDrawElements(GL_TRIANGLES, backElemsSize, GL_UNSIGNED_INT, 0);_glec
+      glDrawElements(
+        GL_TRIANGLES,
+        borderIndxDataCount + planeElemCount*6,
+        GL_UNSIGNED_INT,
+        borderIndxDataStart
+      );_glec
       redrawPlane = false;
     }
   //  drawGc();
