@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+#define  GLEW_STATIC
+#include <GL/glew.h>
+
 typedef enum {
   nid_add,
   nid_sub,
@@ -11,10 +15,10 @@ typedef enum {
 } nodeIds;
 
 typedef enum {dt_num, dt_arr, dt_par, dt_tex, dt_noOut} dtype;
-typedef num_t double
-typedef struct {float   *data, uint32_t w, uint32_t h, uint16_t d} arr_t;
-typedef struct {uint8_t *data, uint32_t w, uint32_t h, uint16_t d} par_t;
-typedef struct {GLuint   tex,  uint32_t w, uint32_t h} dt_tex; // in pixels
+typedef double num_t;
+typedef struct {float   *data; uint32_t w; uint32_t h; uint16_t d;} arr_t;
+typedef struct {uint8_t *data; uint32_t w; uint32_t h; uint16_t d;} par_t;
+typedef struct {GLuint   tex;  uint32_t w; uint32_t h;} tex_t; // in pixels
 
 
 typedef union {
@@ -44,4 +48,4 @@ typedef struct {
 } nodeDef;
 // face size should be taken from uitex_nodeFaces
 
-void getNodeDef(nodeDef *def, nodeId id);
+void getNodeDef(nodeDef *def, uint32_t nodeId);

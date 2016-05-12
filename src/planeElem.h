@@ -1,6 +1,6 @@
 #pragma once
 
-#include nodeDef.h
+#include "nodeDef.h"
 
 // every planeElem is a just a rectangle in vertData
 
@@ -57,7 +57,7 @@ typedef enum {
 } planeElemId;
 typedef union {
   planeElemId pei;
-  nodeFace    nface;
+  nodeBase    nbase;// previously nface
   inlet       inlet;
   numLit      numLit;
   numeric     numeric;

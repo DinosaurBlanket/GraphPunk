@@ -1,8 +1,8 @@
 
 #include "nodeDef.h"
 
-void getNodeDef(nodeDef *def, nodeId id) {
-  switch(id) {
+void getNodeDef(nodeDef *def, uint32_t nodeId) {
+  switch(nodeId) {
     case nid_add:
     case nid_sub:
     case nid_mul:

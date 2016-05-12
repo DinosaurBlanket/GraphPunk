@@ -1,5 +1,6 @@
 
-
+#include <stdio.h>
+#include "misc.h"
 #include "planeElem.h"
 #include "pretendFile.h"
 
@@ -367,11 +368,11 @@ void clickDn(int posX_px, int posY_px) {
   newCurs_3[2] = 1.0f;
   fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
   fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
-  if (!onClickGc(newCurs_3)) {
-    fr(i,2) {scrollVel_2[i] = 0;}
-    onDrag    = onDragScroll;
-    onClickUp = onClickUpScroll;
-  }
+  //if (!onClickGc(newCurs_3)) {
+  //  fr(i,2) {scrollVel_2[i] = 0;}
+  //  onDrag    = onDragScroll;
+  //  onClickUp = onClickUpScroll;
+  //}
 }
 void curMove(int posX_px, int posY_px) {
   corneredToCentered(newCurs_3, posX_px, posY_px);
