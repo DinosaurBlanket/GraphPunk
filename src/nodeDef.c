@@ -1,5 +1,7 @@
 
+#include <stdio.h>
 #include "nodeDef.h"
+#include "error.h"
 
 void getNodeDef(nodeDef *def, uint32_t nodeId) {
   switch(nodeId) {

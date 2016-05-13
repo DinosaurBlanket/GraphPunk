@@ -1,14 +1,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define  GLEW_STATIC
 #include <GL/glew.h>
 
 #include "fileTools.h"
 #include "error.h"
 
 GLuint createShaderProgram(
-  const char *vertPath, 
-  const char *fragPath, 
+  const char *vertPath,
+  const char *fragPath,
   const char *progName
 ) {
   int vertSourceSize, fragSourceSize, textBufSize = 1024;
@@ -33,7 +34,7 @@ GLuint createShaderProgram(
   
   GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);_glec
   stringFromFile(vertPath, textBuf, textBufSize);
-  glShaderSource(vertShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
+  glShaderSource(vertShader, 1, (const GLchar**)&textBuf, NULL);_glec
   glCompileShader(vertShader);_glec
   glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);_glec
   if (!success) {
@@ -44,7 +45,7 @@ GLuint createShaderProgram(
   
   GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);_glec
   stringFromFile(fragPath, textBuf, textBufSize);
-  glShaderSource(fragShader, 1, (const GLchar * const*)&textBuf, NULL);_glec
+  glShaderSource(fragShader, 1, (const GLchar **)&textBuf, NULL);_glec
   glCompileShader(fragShader);_glec
   glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);_glec
   if (!success) {

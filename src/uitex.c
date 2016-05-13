@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "uitex.h"
 
 const float uitex_gcRect[4] = {0, 0, 320, 64};
@@ -18,10 +19,10 @@ const float uitex_base10SignRect[4] = {352, 64, 368, 80};
 const float uitex_base12SignRect[4] = {368, 64, 384, 80};
 const float uitex_base16SignRect[4] = {384, 64, 400, 80};
 inline void uitex_nmrlRect(float rect[4], const uint32_t n) {
-  rect[0] = uitex_nmrlRect[0] + uitex_nmrlW*n;
-  rect[1] = uitex_nmrlRect[1];
-  rect[2] = uitex_nmrlRect[2] + uitex_nmrlW*n + uitex_nmrlW;
-  rect[3] = uitex_nmrlRect[3];
+  rect[0] = uitex_nmrlRects[0] + uitex_nmrlW*n;
+  rect[1] = uitex_nmrlRects[1];
+  rect[2] = uitex_nmrlRects[2] + uitex_nmrlW*n + uitex_nmrlW;
+  rect[3] = uitex_nmrlRects[3];
 }
 
 // this array must be parallel to nodeIds enum (4 floats per node, xyxy)

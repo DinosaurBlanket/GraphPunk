@@ -5,6 +5,7 @@ src = [
     "ui.c",
     "misc.c",
     "uitex.c",
+    "nodeDef.c",
     "oglTools.c",
     "fileTools.c",
     "timestamp.c",
