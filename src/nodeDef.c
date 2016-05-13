@@ -16,13 +16,13 @@ void getNodeDef(nodeDef *def, uint32_t nodeId) {
       def->inletPos[0]  = 0;
       def->inletPos[1]  = 1;
       def->extraPECount = 0;
-      def->ndodCount    = 4;
+      def->ndodCount    = 5;
       return;
     case nid_numlit_b10w08:
       def->outType      = dt_num;
       def->inletCount   = 0;
       def->extraPECount = 8; // base 10, width 8
-      def->ndodCount    = 3;
+      def->ndodCount    = 4;
       return;
     case nid_output:
       def->outType      = dt_noOut;
@@ -30,7 +30,7 @@ void getNodeDef(nodeDef *def, uint32_t nodeId) {
       def->inTypes[0]   = dt_num;
       def->inletPos[0]  = 0;
       def->extraPECount = 0;
-      def->ndodCount    = 3;
+      def->ndodCount    = 4;
       return;
     default:_SHOULD_NOT_BE_HERE_;
   }

@@ -26,7 +26,7 @@ cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
 void mapTexRectToVerts(
   float      *destVertData,
-  const float destPos_px[2],     // bottom left position pixels
+  const float destPos_px[2],  // bottom left position pixels
   const float srcRect_nt[4]   // normalized texture coordinates
 ) {
   // bl
@@ -226,13 +226,13 @@ void initUi(float videoSize_px2[2]) {
   resizeBuffers();
   nodeDef nddef = {0};
   int planeElemi = 0;
+  float *peVertData = &vertData[peVertDataStart];
+  float nodeBasePos_px[2] = {0};
+  float destPos_px[2]     = {0};
+  float srcRect_nt[4]     = {0};
   for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
     int nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
-    float *peVertData = &vertData[peVertDataStart];
-    float nodeBasePos_px[2] = {0};
-    float destPos_px[2]     = {0};
-    float srcRect_nt[4]     = {0};
     switch(nid) {
       case nid_output:
       case nid_add:
@@ -281,7 +281,7 @@ void initUi(float videoSize_px2[2]) {
         break;
       default: _SHOULD_NOT_BE_HERE_;
     }
-    if (planeElemCount > planeElemi) _SHOULD_NOT_BE_HERE_;
+    if (planeElemi > planeElemCount+1) _SHOULD_NOT_BE_HERE_;
   }
   
   resetPlaneRect();
