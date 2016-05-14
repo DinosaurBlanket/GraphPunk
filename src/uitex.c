@@ -21,7 +21,7 @@ const float uitex_base16SignRect[4] = {384, 64, 400, 80};
 inline void uitex_nmrlRect(float rect[4], const uint32_t n) {
   rect[0] = uitex_nmrlRects[0] + uitex_nmrlW*n;
   rect[1] = uitex_nmrlRects[1];
-  rect[2] = uitex_nmrlRects[2] + uitex_nmrlW*n + uitex_nmrlW;
+  rect[2] = uitex_nmrlRects[0] + uitex_nmrlW*n + uitex_nmrlW;
   rect[3] = uitex_nmrlRects[3];
 }
 

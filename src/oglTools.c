@@ -79,20 +79,16 @@ GLuint createShaderProgram(
 #include <SDL2/SDL_surface.h>
 
 void texFromBmp(const char *bmpPath) {
-  SDL_Surface *srfcRaw = SDL_LoadBMP(bmpPath);_sdlec
-  SDL_Surface *srfc  = SDL_ConvertSurfaceFormat(
-    srfcRaw, SDL_PIXELFORMAT_ABGR8888, 0
-  );_sdlec
-  SDL_FreeSurface(srfcRaw);_sdlec
+  SDL_Surface *srfc = SDL_LoadBMP(bmpPath);_sdlec
   glTexImage2D(
     GL_TEXTURE_2D,        // GLenum        target
     0,                    // GLint         level
-    GL_RGBA,              // GLint         internalformat
+    GL_RGBA8,             // GLint         internalformat
     srfc->w,              // GLsizei       width
     srfc->h,              // GLsizei       height
     0,                    // GLint         border
     GL_RGBA,              // GLenum        format
-    GL_UNSIGNED_BYTE,     // GLenum        type
+    GL_UNSIGNED_INT_8_8_8_8,     // GLenum        type
     srfc->pixels          // const GLvoid *data
   );_glec
   SDL_FreeSurface(srfc);_sdlec

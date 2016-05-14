@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   );_sdlec
   GlContext = SDL_GL_CreateContext(window);_sdlec
   SDL_GL_SetSwapInterval(ENABLE_VSYNC);_sdlec
-
+  
   glewExperimental = GL_TRUE;
   {
     GLenum r = glewInit();
@@ -43,22 +43,22 @@ int main(int argc, char *argv[]) {
   #if PRINT_GL_VERSION
   printf("OpenGL version: %s\n\n", glGetString(GL_VERSION));_glec
   #endif
-
+  
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+  
   initUi(videoSize_px2);
-
+  
   timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timestamp ts_frameDelta = {0,0};
   #if LOG_TIMING
   timestamp ts_compTime = {0,0}, ts_now = {0,0};
   #endif
   getTimestamp(&ts_newFrameStart);
-
+  
   int  curFrame = 0;
   bool running = true;
-
+  
 	while (running) {
     ts_oldFrameStart = ts_newFrameStart;
     getTimestamp(&ts_newFrameStart);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
       ts_frameDelta.tv_sec, ts_frameDelta.tv_nsec
     );
     #endif
-
+    
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -93,9 +93,9 @@ int main(int argc, char *argv[]) {
           break;
       }
     }
-
+    
     perFrame();
-
+    
     #if LOG_TIMING
 		getTimestamp(&ts_now);
     getTimeDelta(&ts_newFrameStart, &ts_now, &ts_compTime);
@@ -103,11 +103,11 @@ int main(int argc, char *argv[]) {
       ts_compTime.tv_sec, ts_compTime.tv_nsec
     );
     #endif
-
+    
 		SDL_GL_SwapWindow(window);_sdlec
     curFrame++;
 	}
-
+  
 	SDL_GL_DeleteContext(GlContext);_sdlec
 	SDL_Quit();_sdlec
 	return 0;

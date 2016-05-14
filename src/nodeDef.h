@@ -4,6 +4,8 @@
 #define  GLEW_STATIC
 #include <GL/glew.h>
 
+#define fingerUnit  16 // pixels
+
 typedef enum {
   nid_add,
   nid_sub,
@@ -36,15 +38,16 @@ typedef struct {
 } programFileHeader;
 
 
-#define maxInletCount 30
+#define maxInletCount 28
 
 typedef struct {
+  uint16_t size[2];      // in pixels
   uint8_t  extraPECount; // extra planeElem count
   uint8_t  ndodCount;    // jump to next nodeId in nodeDataOnDisk array
   uint8_t  outType;
   uint8_t  inletCount;
   uint8_t  inTypes[maxInletCount];
-  uint8_t  inletPos[maxInletCount]; // from left, in fingerUnits
+  uint8_t  inletPos[maxInletCount]; // from left, in inlet widths
 } nodeDef;
 // face size should be taken from uitex_nodeFaces
 

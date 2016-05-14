@@ -10,8 +10,7 @@
 #include "pretendFile.h"
 #include "uitex.h"
 
-#define fingerUnit  16
-float halfVideoSize_2[2] = {0};
+float halfVideoSize[2] = {0};
 void printVerts(const float *vertData, int vertCount) {
   fr(i,vertCount) {
     printf(
@@ -24,31 +23,57 @@ typedef void (*cursEventHandler)(void *data);
 extern void doNothing(void *data) {}
 cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
-void mapTexRectToVerts(
+void mapTexRectToVertPos(
   float      *destVertData,
-  const float destPos_px[2],  // bottom left position pixels
-  const float srcRect_nt[4]   // normalized texture coordinates
+  const float destPos[2],
+  const float srcRect[4]
 ) {
   // bl
-  destVertData[ 0] = destPos_px[0];
-  destVertData[ 1] = destPos_px[1];
-  destVertData[ 2] = srcRect_nt[0];
-  destVertData[ 3] = srcRect_nt[1];
+  destVertData[ 0] = destPos[0];
+  destVertData[ 1] = destPos[1];
+  destVertData[ 2] = srcRect[0];
+  destVertData[ 3] = srcRect[1];
   // tl
-  destVertData[ 4] = destPos_px[0];
-  destVertData[ 5] = destPos_px[1] + (srcRect_nt[3] - srcRect_nt[1]);
-  destVertData[ 6] = srcRect_nt[0];
-  destVertData[ 7] = srcRect_nt[3];
+  destVertData[ 4] = destPos[0];
+  destVertData[ 5] = destPos[1] + (srcRect[3] - srcRect[1]);
+  destVertData[ 6] = srcRect[0];
+  destVertData[ 7] = srcRect[3];
   // tr
-  destVertData[ 8] = destPos_px[0] + (srcRect_nt[2] - srcRect_nt[0]);
+  destVertData[ 8] = destPos[0] + (srcRect[2] - srcRect[0]);
   destVertData[ 9] = destVertData[5];
-  destVertData[10] = srcRect_nt[2];
-  destVertData[11] = srcRect_nt[3];
+  destVertData[10] = srcRect[2];
+  destVertData[11] = srcRect[3];
   // br
   destVertData[12] = destVertData[8];
-  destVertData[13] = destPos_px[1];
-  destVertData[14] = srcRect_nt[2];
-  destVertData[15] = srcRect_nt[1];
+  destVertData[13] = destPos[1];
+  destVertData[14] = srcRect[2];
+  destVertData[15] = srcRect[1];
+}
+void mapTexRectToVertRect(
+  float      *destVertData,
+  const float destRect[4],
+  const float srcRect[4]
+) {
+  // bl
+  destVertData[ 0] = destRect[0];
+  destVertData[ 1] = destRect[1];
+  destVertData[ 2] = srcRect[0];
+  destVertData[ 3] = srcRect[1];
+  // tl
+  destVertData[ 4] = destRect[0];
+  destVertData[ 5] = destRect[3];
+  destVertData[ 6] = srcRect[0];
+  destVertData[ 7] = srcRect[3];
+  // tr
+  destVertData[ 8] = destRect[2];
+  destVertData[ 9] = destRect[3];
+  destVertData[10] = srcRect[2];
+  destVertData[11] = srcRect[3];
+  // br
+  destVertData[12] = destRect[2];
+  destVertData[13] = destRect[1];
+  destVertData[14] = srcRect[2];
+  destVertData[15] = srcRect[1];
 }
 void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
   uint32_t v = 0;
@@ -204,8 +229,8 @@ void loadProgramData(nodeDataOnDisk *ndod, const char *path) {
 
 
 
-void initUi(float videoSize_px2[2]) {
-  fr(i,2) {halfVideoSize_2[i] = videoSize_px2[i]/2.0f;}
+void initUi(float videoSize[2]) {
+  fr(i,2) {halfVideoSize[i] = videoSize[i]/2.0f;}
   glGenVertexArrays(1, &vao);_glec
   glBindVertexArray(vao);_glec
   glGenBuffers(1, &vbo);_glec
@@ -224,34 +249,36 @@ void initUi(float videoSize_px2[2]) {
   planeElemCount  = pgf.planeElemCount;
   planeElemCap = nextHighestPO2(planeElemCount);
   resizeBuffers();
-  nodeDef nddef = {0};
+  nodeDef nddef = {{0}};
   int planeElemi = 0;
   float *peVertData = &vertData[peVertDataStart];
-  float nodeBasePos_px[2] = {0};
-  float destPos_px[2]     = {0};
-  float srcRect_nt[4]     = {0};
+  float nodeBasePos[2] = {0};
+  float destPos[2]     = {0};
+  float destRect[4]    = {0};
+  float srcRect[4]     = {0};
   for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
     int nid = ndod[ndodi].n;
     getNodeDef(&nddef, nid);
     switch(nid) {
-      case nid_output:
       case nid_add:
       case nid_sub:
       case nid_mul:
       case nid_div:
+      case nid_output:
         // node face
-        fr(i,2) {destPos_px[i] = nodeBasePos_px[i] = ndod[ndodi+1+i].p;}
-        fr(i,4) {srcRect_nt[i] = uitex_nodeFaces[planeElemi*4 + i];}
-        mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+        fr(i,2) {destPos[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
+        fr(i,4) {srcRect[i] = uitex_nodeFaces[nid*4 + i];}
+        mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
         planeElems[planeElemi].nbase.pei = pei_nface;
         planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
         planeElems[planeElemi].nbase.nid = nid;
         planeElemi++;
         // inlets
         fr(i, nddef.inletCount) {
-          destPos_px[0] = nodeBasePos_px[0] + nddef.inletPos[i]*fingerUnit;
-          destPos_px[1] = nodeBasePos_px[1] - uitex_portH;
-          fr(j,4) {srcRect_nt[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
+          destPos[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
+          destPos[1] = nodeBasePos[1] - uitex_portH;
+          fr(j,4) {srcRect[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
+          mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
           planeElems[planeElemi].inlet.pei    = pei_inlet;
           planeElems[planeElemi].inlet.index  = i;
           planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
@@ -260,22 +287,23 @@ void initUi(float videoSize_px2[2]) {
         }
         break;
       case nid_numlit_b10w08:
-        fr(i,2) {destPos_px[i] = nodeBasePos_px[i] = ndod[ndodi+1+i].p;}
-        srcRect_nt[0] = srcRect_nt[2] = uitex_numLitBackcolor_x;
-        srcRect_nt[1] = srcRect_nt[3] = uitex_numLitBackcolor_y;
-        mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+        fr(i,2) {destPos[i] = destRect[i] = ndod[ndodi+1+i].p;}
+        fr(i,2) {destRect[i+2] = destRect[i] + nddef.size[i];}
+        srcRect[0] = srcRect[2] = uitex_numLitBackcolor_x;
+        srcRect[1] = srcRect[3] = uitex_numLitBackcolor_y;
+        mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
         planeElems[planeElemi].numLit.pei   = pei_numLit;
         planeElems[planeElemi].numLit.width = nddef.extraPECount;
         planeElems[planeElemi].numLit.base  = 10;
         planeElems[planeElemi].numLit.value = ndod[ndodi+ndodNumLitValStart].v;
         planeElemi++;
         // just fill it with eights for now
-        uitex_nmrlRect(srcRect_nt, 8);
+        uitex_nmrlRect(srcRect, 8);
         fr(i,8) {
-          mapTexRectToVerts(&peVertData[planeElemi*16], destPos_px, srcRect_nt);
+          mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
           planeElems[planeElemi].numeric.pei   = pei_numeric;
           planeElems[planeElemi].numeric.value = 8;
-          destPos_px[0] += fingerUnit;
+          destPos[0] += fingerUnit;
           planeElemi++;
         }
         break;
@@ -309,7 +337,7 @@ void initUi(float videoSize_px2[2]) {
   unif_scroll        = glGetUniformLocation(uiShader, "scroll");_glec
   unif_halfVideoSize = glGetUniformLocation(uiShader, "halfVideoSize");_glec
   glUniform2f(unif_scroll, 0, 0);_glec
-  glUniform2f(unif_halfVideoSize, halfVideoSize_2[0], halfVideoSize_2[1]);_glec
+  glUniform2f(unif_halfVideoSize, halfVideoSize[0], halfVideoSize[1]);_glec
   GLuint uiTex;
   glGenTextures(1, &uiTex);_glec
   glBindTexture(GL_TEXTURE_2D, uiTex);_glec
@@ -351,27 +379,25 @@ void onClickUpScroll(void *data) {
 }
 
 void corneredToCentered(float centered[2], const int cX, const int cY) {
-  centered[0] =  cX - halfVideoSize_2[0];
-  centered[1] = -cY + halfVideoSize_2[1];
+  centered[0] =  cX - halfVideoSize[0];
+  centered[1] = -cY + halfVideoSize[1];
 }
 
-void clickDn(int posX_px, int posY_px) {
-  corneredToCentered(newCurs_3, posX_px, posY_px);
+void clickDn(int posX, int posY) {
+  corneredToCentered(newCurs_3, posX, posY);
   newCurs_3[2] = 1.0f;
   fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
   fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
-  //if (!onClickGc(newCurs_3)) {
-  //  fr(i,2) {scrollVel_2[i] = 0;}
-  //  onDrag    = onDragScroll;
-  //  onClickUp = onClickUpScroll;
-  //}
+  fr(i,2) {scrollVel_2[i] = 0;}
+  onDrag    = onDragScroll;
+  onClickUp = onClickUpScroll;
 }
-void curMove(int posX_px, int posY_px) {
-  corneredToCentered(newCurs_3, posX_px, posY_px);
+void curMove(int posX, int posY) {
+  corneredToCentered(newCurs_3, posX, posY);
   if (newCurs_3[2]) onDrag(NULL);
 }
-void clickUp(int posX_px, int posY_px) {
-  corneredToCentered(newCurs_3, posX_px, posY_px);
+void clickUp(int posX, int posY) {
+  corneredToCentered(newCurs_3, posX, posY);
   newCurs_3[2] = 0;
   onClickUp(NULL);
 }
@@ -382,17 +408,17 @@ bool redrawPlane = true;
 void perFrame(void) {
   fr(i,2) {newScroll_2[i] += scrollVel_2[i];}
   if (!allEq(newScroll_2, oldScroll_2, 2)) {
-    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize_2[0];
-    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize_2[1];
-    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize_2[0];
-    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize_2[1];
+    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
+    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
+    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
+    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
     fr(i,2) {
       if (screenCrnrs_4[i] < planeRect[i]) {
-        newScroll_2[i] = planeRect[i] + halfVideoSize_2[i];
+        newScroll_2[i] = planeRect[i] + halfVideoSize[i];
         scrollVel_2[i] = 0;
       }
       else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
-        newScroll_2[i] = planeRect[i+2] - halfVideoSize_2[i];
+        newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
         scrollVel_2[i] = 0;
       }
     }
