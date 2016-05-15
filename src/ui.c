@@ -11,13 +11,37 @@
 #include "uitex.h"
 
 float halfVideoSize[2] = {0};
-void printVerts(const float *vertData, int vertCount) {
+void printVerts(const float *vertData, const int vertCount) {
   fr(i,vertCount) {
     printf(
-      "%2i: vert pos, gu: % 6.2f, % 6.2f  -  tex pos, nt: % 6.5f, % 6.5f\n",
+      "%4i: vert pos: % 8.2f, % 8.2f  -  tex pos: % 8.2f, % 8.2f\n",
       i, vertData[4*i], vertData[4*i + 1], vertData[4*i + 2], vertData[4*i + 3]
     );
+    if (!((i+1)%4)) puts("");
   }
+}
+void printIndxs(const uint32_t *indxData, const int indxCount) {
+  for(int i = 0; i < indxCount; i += 6) {
+    printf(
+      "%4i: % 5i, % 5i, % 5i,  % 5i, % 5i, % 5i\n", i/6,
+      indxData[i  ], indxData[i+1], indxData[i+2],
+      indxData[i+3], indxData[i+4], indxData[i+5]
+    );
+  }
+}
+void printVertRect(const float vertData[16]) {
+  printf(
+    "TL: v: % 8.2f, % 8.2f  t: % 8.2f, % 8.2f      TR: v: % 8.2f, % 8.2f  t: % 8.2f, % 8.2f\n"
+    "BL: v: % 8.2f, % 8.2f  t: % 8.2f, % 8.2f      BR: v: % 8.2f, % 8.2f  t: % 8.2f, % 8.2f\n",
+    vertData[4],vertData[5], vertData[6],vertData[7],  vertData[8],vertData[9],   vertData[10],vertData[11],
+    vertData[0],vertData[1], vertData[2],vertData[3],  vertData[12],vertData[13], vertData[14],vertData[15]
+  );
+}
+void printRect(const float rect[4]) {
+  printf(
+    "(% 8.2f, % 8.2f) to (% 8.2f, % 8.2f)\n",
+    rect[0],rect[1], rect[2],rect[3]
+  );
 }
 typedef void (*cursEventHandler)(void *data);
 extern void doNothing(void *data) {}
@@ -75,8 +99,12 @@ void mapTexRectToVertRect(
   destVertData[14] = srcRect[2];
   destVertData[15] = srcRect[1];
 }
-void setRectElems(uint32_t *elems, const uint32_t elemsSize) {
-  uint32_t v = 0;
+void setRectElems(
+  uint32_t      *elems,
+  const uint32_t elemsSize,
+  const uint32_t vStart
+) {
+  uint32_t v = vStart;
   uint32_t e = 0;
   for (; e < elemsSize; v += 4, e += 6) {
     elems[e  ] = v;
@@ -122,6 +150,7 @@ const GLbitfield bufferStorageFlags =
 #define borderIndxDataCount  24
 // there will be more fixed-size vert data later
 #define peVertDataStart     (borderVertDataStart + borderVertDataCount)
+#define peIndxDataStart     (borderIndxDataStart + borderIndxDataCount)
 uint32_t peVertDataCap(void) {return planeElemCap*12 - peVertDataStart;}
 uint32_t lineVertDataStart(void) {return peVertDataStart + peVertDataCap();}
 uint32_t lineVertDataCap(void) {return planeElemCap*4;}
@@ -174,18 +203,23 @@ void resizeBuffers(void) {
 
 #define planePadding  (fingerUnit*12) // arbitrary
 void resetPlaneRect(void) {
+  float *peVertData     = &vertData[peVertDataStart];
   // start with the position of the first pe, doesn't matter what pe it is
-  planeRect[0] = vertData[peVertDataStart+0];
-  planeRect[1] = vertData[peVertDataStart+1];
-  planeRect[2] = vertData[peVertDataStart+8];
-  planeRect[3] = vertData[peVertDataStart+9];
+  planeRect[0] = peVertData[0];
+  planeRect[1] = peVertData[1];
+  planeRect[2] = peVertData[8];
+  planeRect[3] = peVertData[9];
   // then stretch to include every other pe
-  for (int i = peVertDataStart; i < planeElemCount; i += 16) {
-    if (vertData[i+0] < planeRect[0]) planeRect[0] = vertData[i+0];
-    if (vertData[i+1] < planeRect[1]) planeRect[1] = vertData[i+1];
-    if (vertData[i+8] > planeRect[2]) planeRect[2] = vertData[i+8];
-    if (vertData[i+9] > planeRect[3]) planeRect[3] = vertData[i+9];
+  for (int i = 0; i < planeElemCount*16; i += 16) {
+    if (peVertData[i  ] < planeRect[0]) planeRect[0] = peVertData[i  ];
+    if (peVertData[i+1] < planeRect[1]) planeRect[1] = peVertData[i+1];
+    if (peVertData[i+8] > planeRect[2]) planeRect[2] = peVertData[i+8];
+    if (peVertData[i+9] > planeRect[3]) planeRect[3] = peVertData[i+9];
   }
+  //planeRect[0] -= planePadding;
+  //planeRect[1] -= planePadding;
+  //planeRect[2] += planePadding;
+  //planeRect[3] += planePadding;
   // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
@@ -216,7 +250,7 @@ void resetPlaneRect(void) {
     uitex_borderColor_x, uitex_borderColor_y
   };
   fr(i,borderVertDataCount) {
-    vertData[borderVertDataCount+i] = backVertData[i];
+    vertData[borderVertDataStart+i] = backVertData[i];
   }
 }
 
@@ -314,18 +348,34 @@ void initUi(float videoSize[2]) {
   
   resetPlaneRect();
   
-  
-  
   // indx data
-  const uint32_t backElems[borderIndxDataCount] = {
-    4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3,
-  };
-  fr(i, borderIndxDataCount) {
-    indxData[i+borderIndxDataStart] = backElems[i];
+  setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount, gcVertDataStart);
+  {
+    const uint32_t backElems[borderIndxDataCount] = {
+      4,5,0, 5,1,0,  5,6,1, 6,2,1,  6,7,2, 7,3,2,  7,4,3, 4,0,3
+    };
+    fr(i, borderIndxDataCount) {
+      indxData[borderIndxDataStart+i] = borderVertDataStart/4 + backElems[i];
+    }
   }
-  setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount);
-  setRectElems(&indxData[peVertDataStart], planeElemCap*6);
+  setRectElems(&indxData[peIndxDataStart], planeElemCap*6, peVertDataStart/4);
   
+  #if LOG_UI_BUFFERS
+  puts("\n\n\tvertData");
+  puts("\nglobal controls");
+  printVerts(&vertData[gcVertDataStart], gcVertDataCount/4);
+  puts("\nborder");
+  printVerts(&vertData[borderVertDataStart], borderVertDataCount/4);
+  puts("\nplaneElems");
+  printVerts(&vertData[peVertDataStart], planeElemCount*4);
+  puts("\n\n\tindxData");
+  puts("\nglobal controls");
+  printIndxs(&indxData[gcIndxDataStart], gcIndxDataCount);
+  puts("\nborder");
+  printIndxs(&indxData[borderIndxDataStart], borderIndxDataCount);
+  puts("\nplaneElems");
+  printIndxs(&indxData[peIndxDataStart], planeElemCount*6);
+  #endif
   
   glClearColor(uitex_clearR, uitex_clearG, uitex_clearB, uitex_clearA);
   GLuint uiShader = createShaderProgram(
@@ -402,40 +452,40 @@ void clickUp(int posX, int posY) {
   onClickUp(NULL);
 }
 
-float screenCrnrs_4[4]  = {0}; // xyxy, bl tr, relative to plane center
+float screenCrnrs_4[4] = {0}; // xyxy, bl tr, relative to plane center
 bool redrawPlane = true;
 
-void perFrame(void) {
+void perFrame(const uint32_t curFrame) {
   fr(i,2) {newScroll_2[i] += scrollVel_2[i];}
-  if (!allEq(newScroll_2, oldScroll_2, 2)) {
-    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
-    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
-    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
-    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
-    fr(i,2) {
-      if (screenCrnrs_4[i] < planeRect[i]) {
-        newScroll_2[i] = planeRect[i] + halfVideoSize[i];
-        scrollVel_2[i] = 0;
-      }
-      else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
-        newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
-        scrollVel_2[i] = 0;
-      }
-    }
-    redrawPlane = true;
-  }
+  //if (!allEq(newScroll_2, oldScroll_2, 2)) {
+  //  screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
+  //  screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
+  //  screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
+  //  screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
+  //  fr(i,2) {
+  //    if (screenCrnrs_4[i] < planeRect[i]) {
+  //      newScroll_2[i] = planeRect[i] + halfVideoSize[i];
+  //      scrollVel_2[i] = 0;
+  //    }
+  //    else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
+  //      newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
+  //      scrollVel_2[i] = 0;
+  //    }
+  //  }
+  //  redrawPlane = true;
+  //}
   //if (redrawPlane || redrawGc) {
-    if (redrawPlane) {
+  //  if (redrawPlane) {
       glClear(GL_COLOR_BUFFER_BIT);
-      glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
+      //glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
       glDrawElements(
         GL_TRIANGLES,
         borderIndxDataCount + planeElemCount*6,
         GL_UNSIGNED_INT,
         (const GLvoid*)borderIndxDataStart
       );_glec
-      redrawPlane = false;
-    }
+      //redrawPlane = false;
+  //  }
   //  drawGc();
   //}
   fr(i,3) {oldCurs_3[i] = newCurs_3[i];}

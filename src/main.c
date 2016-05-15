@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
       }
     }
     
-    perFrame();
+    perFrame(curFrame);
     
     #if LOG_TIMING
 		getTimestamp(&ts_now);

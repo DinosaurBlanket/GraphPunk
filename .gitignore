@@ -3,3 +3,4 @@ log/*
 img/*.xcf
 GraphPunk
 .sconsign.dblite
+out.txt
