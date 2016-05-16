@@ -5,7 +5,7 @@
 #define ENABLE_VSYNC     1
 #define PRINT_GL_VERSION 0
 #define LOG_TIMING       0
-#define LOG_UI_BUFFERS   1
+#define LOG_UI_BUFFERS   0
 
 #if CHECK_SDL_ERRORS
   void sdlec(int line, const char *file);

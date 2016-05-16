@@ -312,7 +312,6 @@ void initUi() {
         planeElems[planeElemi].nbase.pei = pei_nface;
         planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
         planeElems[planeElemi].nbase.nid = nid;
-        printf("face     : %i\n", planeElemi);
         planeElemi++;
         // inlets
         fr(i, nddef.inletCount) {
@@ -324,7 +323,6 @@ void initUi() {
           planeElems[planeElemi].inlet.index  = i;
           planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
           planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
-          printf("inlet    : %i\n", planeElemi);
           planeElemi++;
         }
         break;
@@ -338,7 +336,6 @@ void initUi() {
         planeElems[planeElemi].numLit.width = nddef.extraPECount;
         planeElems[planeElemi].numLit.base  = 10;
         planeElems[planeElemi].numLit.value = ndod[ndodi+ndodNumLitValStart].v;
-        printf("num face : %i\n", planeElemi);
         planeElemi++;
         // just fill it with eights for now
         uitex_nmrlRect(srcRect, 8);
@@ -347,7 +344,6 @@ void initUi() {
           planeElems[planeElemi].numeric.pei   = pei_numeric;
           planeElems[planeElemi].numeric.value = 8;
           destPos[0] += fingerUnit;
-          printf("inlet    : %i\n", planeElemi);
           planeElemi++;
         }
         break;
@@ -357,7 +353,6 @@ void initUi() {
   }
   
   resetPlaneRect();
-  printf("end      : %i\n", planeElemi);
   printf("planeRect: ");
   printRect(planeRect);
   
@@ -499,9 +494,9 @@ void perFrame(const uint32_t curFrame) {
       glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
       glDrawElements(
         GL_TRIANGLES,
-        borderIndxDataCount + planeElemCount*6   +45,//?
+        borderIndxDataCount + planeElemCount*6,
         GL_UNSIGNED_INT,
-        (const GLvoid*)borderIndxDataStart
+        (const GLvoid*) (borderIndxDataStart*sizeof(uint32_t))
       );_glec
       redrawPlane = false;
     }
