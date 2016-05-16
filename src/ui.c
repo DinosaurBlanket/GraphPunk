@@ -10,6 +10,7 @@
 #include "pretendFile.h"
 #include "uitex.h"
 
+float videoSize[2]     = {0};
 float halfVideoSize[2] = {0};
 void printVerts(const float *vertData, const int vertCount) {
   fr(i,vertCount) {
@@ -216,10 +217,15 @@ void resetPlaneRect(void) {
     if (peVertData[i+8] > planeRect[2]) planeRect[2] = peVertData[i+8];
     if (peVertData[i+9] > planeRect[3]) planeRect[3] = peVertData[i+9];
   }
-  //planeRect[0] -= planePadding;
-  //planeRect[1] -= planePadding;
-  //planeRect[2] += planePadding;
-  //planeRect[3] += planePadding;
+  // add padding and make sure the plane is at least as big as the screen
+  do {
+    planeRect[0] -= planePadding;
+    planeRect[2] += planePadding;
+  } while(planeRect[2] - planeRect[0] <= videoSize[0]);
+  do {
+    planeRect[1] -= planePadding;
+    planeRect[3] += planePadding;
+  } while(planeRect[3] - planeRect[1] <= videoSize[1]);
   // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
@@ -263,7 +269,7 @@ void loadProgramData(nodeDataOnDisk *ndod, const char *path) {
 
 
 
-void initUi(float videoSize[2]) {
+void initUi() {
   fr(i,2) {halfVideoSize[i] = videoSize[i]/2.0f;}
   glGenVertexArrays(1, &vao);_glec
   glBindVertexArray(vao);_glec
@@ -306,6 +312,7 @@ void initUi(float videoSize[2]) {
         planeElems[planeElemi].nbase.pei = pei_nface;
         planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
         planeElems[planeElemi].nbase.nid = nid;
+        printf("face     : %i\n", planeElemi);
         planeElemi++;
         // inlets
         fr(i, nddef.inletCount) {
@@ -317,6 +324,7 @@ void initUi(float videoSize[2]) {
           planeElems[planeElemi].inlet.index  = i;
           planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
           planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
+          printf("inlet    : %i\n", planeElemi);
           planeElemi++;
         }
         break;
@@ -330,6 +338,7 @@ void initUi(float videoSize[2]) {
         planeElems[planeElemi].numLit.width = nddef.extraPECount;
         planeElems[planeElemi].numLit.base  = 10;
         planeElems[planeElemi].numLit.value = ndod[ndodi+ndodNumLitValStart].v;
+        printf("num face : %i\n", planeElemi);
         planeElemi++;
         // just fill it with eights for now
         uitex_nmrlRect(srcRect, 8);
@@ -338,6 +347,7 @@ void initUi(float videoSize[2]) {
           planeElems[planeElemi].numeric.pei   = pei_numeric;
           planeElems[planeElemi].numeric.value = 8;
           destPos[0] += fingerUnit;
+          printf("inlet    : %i\n", planeElemi);
           planeElemi++;
         }
         break;
@@ -347,6 +357,9 @@ void initUi(float videoSize[2]) {
   }
   
   resetPlaneRect();
+  printf("end      : %i\n", planeElemi);
+  printf("planeRect: ");
+  printRect(planeRect);
   
   // indx data
   setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount, gcVertDataStart);
@@ -435,6 +448,10 @@ void corneredToCentered(float centered[2], const int cX, const int cY) {
 
 void clickDn(int posX, int posY) {
   corneredToCentered(newCurs_3, posX, posY);
+  printf(
+    "newCurs_3: % 8.2f, % 8.2f, % 8.2f\n",
+    newCurs_3[0], newCurs_3[1], newCurs_3[2]
+  );
   newCurs_3[2] = 1.0f;
   fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
   fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
@@ -457,35 +474,37 @@ bool redrawPlane = true;
 
 void perFrame(const uint32_t curFrame) {
   fr(i,2) {newScroll_2[i] += scrollVel_2[i];}
-  //if (!allEq(newScroll_2, oldScroll_2, 2)) {
-  //  screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
-  //  screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
-  //  screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
-  //  screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
-  //  fr(i,2) {
-  //    if (screenCrnrs_4[i] < planeRect[i]) {
-  //      newScroll_2[i] = planeRect[i] + halfVideoSize[i];
-  //      scrollVel_2[i] = 0;
-  //    }
-  //    else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
-  //      newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
-  //      scrollVel_2[i] = 0;
-  //    }
-  //  }
-  //  redrawPlane = true;
-  //}
+  if (!allEq(newScroll_2, oldScroll_2, 2)) {
+    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
+    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
+    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
+    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
+    fr(i,2) {
+      if (screenCrnrs_4[i] < planeRect[i]) {
+        newScroll_2[i] = planeRect[i] + halfVideoSize[i];
+        scrollVel_2[i] = 0;
+      }
+      else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
+        newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
+        scrollVel_2[i] = 0;
+      }
+    }
+    printf("screenCrnrs_4: ");
+    printRect(screenCrnrs_4);
+    redrawPlane = true;
+  }
   //if (redrawPlane || redrawGc) {
-  //  if (redrawPlane) {
+    if (redrawPlane) {
       glClear(GL_COLOR_BUFFER_BIT);
-      //glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
+      glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
       glDrawElements(
         GL_TRIANGLES,
-        borderIndxDataCount + planeElemCount*6,
+        borderIndxDataCount + planeElemCount*6   +45,//?
         GL_UNSIGNED_INT,
         (const GLvoid*)borderIndxDataStart
       );_glec
-      //redrawPlane = false;
-  //  }
+      redrawPlane = false;
+    }
   //  drawGc();
   //}
   fr(i,3) {oldCurs_3[i] = newCurs_3[i];}

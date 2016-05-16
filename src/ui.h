@@ -1,5 +1,7 @@
 
-void initUi(float videoSize_px2[2]);
+extern float videoSize[2];
+
+void initUi();
 void exitUi(void);
 void curMove(int posX_px, int posY_px);
 void clickDn(int posX_px, int posY_px);

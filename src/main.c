@@ -12,7 +12,8 @@
 
 
 int main(int argc, char *argv[]) {
-  float videoSize_px2[2] = {800, 600}; // pixels
+  videoSize[0] = 800; // pixels
+  videoSize[1] = 600; // pixels
   SDL_Window   *window    = NULL;
   SDL_GLContext GlContext = NULL;
   SDL_Init(SDL_INIT_VIDEO);_sdlec
@@ -23,8 +24,8 @@ int main(int argc, char *argv[]) {
     "GraphPunk",               //const char* title,
     SDL_WINDOWPOS_UNDEFINED,   //int         x,
     SDL_WINDOWPOS_UNDEFINED,   //int         y,
-    videoSize_px2[0],          //int         w,
-    videoSize_px2[1],          //int         h,
+    videoSize[0],              //int         w,
+    videoSize[1],              //int         h,
     SDL_WINDOW_OPENGL          //Uint32      flags
   );_sdlec
   GlContext = SDL_GL_CreateContext(window);_sdlec
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
-  initUi(videoSize_px2);
+  initUi();
   
   timestamp ts_oldFrameStart = {0,0}, ts_newFrameStart = {0,0};
   timestamp ts_frameDelta = {0,0};
