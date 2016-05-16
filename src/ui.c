@@ -44,10 +44,6 @@ void printRect(const float rect[4]) {
     rect[0],rect[1], rect[2],rect[3]
   );
 }
-typedef void (*cursEventHandler)(void *data);
-extern void doNothing(void *data) {}
-cursEventHandler onDrag    = doNothing;
-cursEventHandler onClickUp = doNothing;
 void mapTexRectToVertPos(
   float      *destVertData,
   const float destPos[2],
@@ -218,14 +214,10 @@ void resetPlaneRect(void) {
     if (peVertData[i+9] > planeRect[3]) planeRect[3] = peVertData[i+9];
   }
   // add padding and make sure the plane is at least as big as the screen
-  do {
-    planeRect[0] -= planePadding;
-    planeRect[2] += planePadding;
-  } while(planeRect[2] - planeRect[0] <= videoSize[0]);
-  do {
-    planeRect[1] -= planePadding;
-    planeRect[3] += planePadding;
-  } while(planeRect[3] - planeRect[1] <= videoSize[1]);
+  do {planeRect[0] -= planePadding;} while (planeRect[0] > -halfVideoSize[0]);
+  do {planeRect[1] -= planePadding;} while (planeRect[1] > -halfVideoSize[1]);
+  do {planeRect[2] += planePadding;} while (planeRect[2] <  halfVideoSize[0]);
+  do {planeRect[3] += planePadding;} while (planeRect[3] <  halfVideoSize[1]);
   // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
@@ -427,6 +419,11 @@ float oldScroll_2[2]     = {0};
 float clickDnScroll_2[2] = {0};
 float scrollVel_2[2]     = {0};
 
+typedef void (*cursEventHandler)(void *data);
+void doNothing(void *data) {}
+cursEventHandler onDrag    = doNothing;
+cursEventHandler onClickUp = doNothing;
+
 void onDragScroll(void *data) {
   fr(i,2) {
     newScroll_2[i] = clickDnScroll_2[i]-(clickDnCurs_3[i]-newCurs_3[i]);
@@ -440,13 +437,8 @@ void corneredToCentered(float centered[2], const int cX, const int cY) {
   centered[0] =  cX - halfVideoSize[0];
   centered[1] = -cY + halfVideoSize[1];
 }
-
 void clickDn(int posX, int posY) {
   corneredToCentered(newCurs_3, posX, posY);
-  printf(
-    "newCurs_3: % 8.2f, % 8.2f, % 8.2f\n",
-    newCurs_3[0], newCurs_3[1], newCurs_3[2]
-  );
   newCurs_3[2] = 1.0f;
   fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
   fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
@@ -464,29 +456,21 @@ void clickUp(int posX, int posY) {
   onClickUp(NULL);
 }
 
-float screenCrnrs_4[4] = {0}; // xyxy, bl tr, relative to plane center
+//float screenViewRect[4] = {0}; // xyxy, bl tr, relative to plane center
 bool redrawPlane = true;
 
 void perFrame(const uint32_t curFrame) {
-  fr(i,2) {newScroll_2[i] += scrollVel_2[i];}
-  if (!allEq(newScroll_2, oldScroll_2, 2)) {
-    screenCrnrs_4[0] = newScroll_2[0] - halfVideoSize[0];
-    screenCrnrs_4[1] = newScroll_2[1] - halfVideoSize[1];
-    screenCrnrs_4[2] = newScroll_2[0] + halfVideoSize[0];
-    screenCrnrs_4[3] = newScroll_2[1] + halfVideoSize[1];
-    fr(i,2) {
-      if (screenCrnrs_4[i] < planeRect[i]) {
-        newScroll_2[i] = planeRect[i] + halfVideoSize[i];
-        scrollVel_2[i] = 0;
+  fr(i,2) {
+    newScroll_2[i] += scrollVel_2[i];
+    if (newScroll_2[i] != oldScroll_2[i]) {
+      if (newScroll_2[i] > -planeRect[i] - halfVideoSize[i]) {
+        newScroll_2[i] = -planeRect[i] - halfVideoSize[i];
       }
-      else if (screenCrnrs_4[i+2] > planeRect[i+2]) {
-        newScroll_2[i] = planeRect[i+2] - halfVideoSize[i];
-        scrollVel_2[i] = 0;
+      else if (newScroll_2[i] < -planeRect[i+2] + halfVideoSize[i]) {
+        newScroll_2[i] = -planeRect[i+2] + halfVideoSize[i];
       }
+      redrawPlane = true;
     }
-    printf("screenCrnrs_4: ");
-    printRect(screenCrnrs_4);
-    redrawPlane = true;
   }
   //if (redrawPlane || redrawGc) {
     if (redrawPlane) {
@@ -509,6 +493,6 @@ void perFrame(const uint32_t curFrame) {
 
 
 void exitUi(){
-  //write back to disk before freeing
+  // write back to disk before freeing
   free(planeElems);
 }
