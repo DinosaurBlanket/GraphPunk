@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "misc.h"
 #include "error.h"
@@ -43,6 +44,12 @@ void printRect(const float rect[4]) {
     "(% 8.2f, % 8.2f) to (% 8.2f, % 8.2f)\n",
     rect[0],rect[1], rect[2],rect[3]
   );
+}
+void moveVertRect(float vertRect[16], const float offset[2]) {
+  vertRect[ 0] += offset[0]; vertRect[ 1] += offset[1];
+  vertRect[ 4] += offset[0]; vertRect[ 5] += offset[1];
+  vertRect[ 8] += offset[0]; vertRect[ 9] += offset[1];
+  vertRect[12] += offset[0]; vertRect[13] += offset[1];
 }
 void mapTexRectToVertPos(
   float      *destVertData,
@@ -200,24 +207,32 @@ void resizeBuffers(void) {
 
 #define planePadding  (fingerUnit*12) // arbitrary
 void resetPlaneRect(void) {
-  float *peVertData     = &vertData[peVertDataStart];
+  float *peVertData = &vertData[peVertDataStart];
   // start with the position of the first pe, doesn't matter what pe it is
   planeRect[0] = peVertData[0];
   planeRect[1] = peVertData[1];
   planeRect[2] = peVertData[8];
   planeRect[3] = peVertData[9];
-  // then stretch to include every other pe
+  // then expand to include every other pe
   for (int i = 0; i < planeElemCount*16; i += 16) {
     if (peVertData[i  ] < planeRect[0]) planeRect[0] = peVertData[i  ];
     if (peVertData[i+1] < planeRect[1]) planeRect[1] = peVertData[i+1];
     if (peVertData[i+8] > planeRect[2]) planeRect[2] = peVertData[i+8];
     if (peVertData[i+9] > planeRect[3]) planeRect[3] = peVertData[i+9];
   }
-  // add padding and make sure the plane is at least as big as the screen
-  do {planeRect[0] -= planePadding;} while (planeRect[0] > -halfVideoSize[0]);
-  do {planeRect[1] -= planePadding;} while (planeRect[1] > -halfVideoSize[1]);
-  do {planeRect[2] += planePadding;} while (planeRect[2] <  halfVideoSize[0]);
-  do {planeRect[3] += planePadding;} while (planeRect[3] <  halfVideoSize[1]);
+  // add padding
+  planeRect[0] -= planePadding;
+  planeRect[1] -= planePadding;
+  planeRect[2] += planePadding;
+  planeRect[3] += planePadding;
+  // make sure it's at least as big as the screen
+  fr(i,2) {
+    if (planeRect[i+2] - planeRect[i] < videoSize[i]) {
+      float compensation = ceil((videoSize[i]-(planeRect[i+2]-planeRect[i]))/2);
+      planeRect[i  ] -= compensation;
+      planeRect[i+2] += compensation;
+    }
+  }
   // update border vert data
   const float backVertData[borderVertDataCount] = {
     // inside border
@@ -281,72 +296,91 @@ void initUi() {
   planeElemCount  = pgf.planeElemCount;
   planeElemCap = nextHighestPO2(planeElemCount);
   resizeBuffers();
-  nodeDef nddef = {{0}};
-  int planeElemi = 0;
   float *peVertData = &vertData[peVertDataStart];
-  float nodeBasePos[2] = {0};
-  float destPos[2]     = {0};
-  float destRect[4]    = {0};
-  float srcRect[4]     = {0};
-  for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
-    int nid = ndod[ndodi].n;
-    getNodeDef(&nddef, nid);
-    switch(nid) {
-      case nid_add:
-      case nid_sub:
-      case nid_mul:
-      case nid_div:
-      case nid_output:
-        // node face
-        fr(i,2) {destPos[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
-        fr(i,4) {srcRect[i] = uitex_nodeFaces[nid*4 + i];}
-        mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
-        planeElems[planeElemi].nbase.pei = pei_nface;
-        planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
-        planeElems[planeElemi].nbase.nid = nid;
-        planeElemi++;
-        // inlets
-        fr(i, nddef.inletCount) {
-          destPos[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
-          destPos[1] = nodeBasePos[1] - uitex_portH;
-          fr(j,4) {srcRect[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
+  {
+    nodeDef nddef = {{0}}; // {{}}??
+    int planeElemi = 0;
+    float nodeBasePos[2] = {0};
+    float destPos[2]     = {0};
+    float destRect[4]    = {0};
+    float srcRect[4]     = {0};
+    for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
+      int nid = ndod[ndodi].n;
+      getNodeDef(&nddef, nid);
+      switch(nid) {
+        case nid_add:
+        case nid_sub:
+        case nid_mul:
+        case nid_div:
+        case nid_output:
+          // node face
+          fr(i,2) {destPos[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
+          fr(i,4) {srcRect[i] = uitex_nodeFaces[nid*4 + i];}
           mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
-          planeElems[planeElemi].inlet.pei    = pei_inlet;
-          planeElems[planeElemi].inlet.index  = i;
-          planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
-          planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
+          planeElems[planeElemi].nbase.pei = pei_nface;
+          planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
+          planeElems[planeElemi].nbase.nid = nid;
           planeElemi++;
-        }
-        break;
-      case nid_numlit_b10w08:
-        fr(i,2) {destPos[i] = destRect[i] = ndod[ndodi+1+i].p;}
-        fr(i,2) {destRect[i+2] = destRect[i] + nddef.size[i];}
-        srcRect[0] = srcRect[2] = uitex_numLitBackcolor_x;
-        srcRect[1] = srcRect[3] = uitex_numLitBackcolor_y;
-        mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
-        planeElems[planeElemi].numLit.pei   = pei_numLit;
-        planeElems[planeElemi].numLit.width = nddef.extraPECount;
-        planeElems[planeElemi].numLit.base  = 10;
-        planeElems[planeElemi].numLit.value = ndod[ndodi+ndodNumLitValStart].v;
-        planeElemi++;
-        // just fill it with eights for now
-        uitex_nmrlRect(srcRect, 8);
-        fr(i,8) {
-          mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
-          planeElems[planeElemi].numeric.pei   = pei_numeric;
-          planeElems[planeElemi].numeric.value = 8;
-          destPos[0] += fingerUnit;
+          // inlets
+          fr(i, nddef.inletCount) {
+            destPos[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
+            destPos[1] = nodeBasePos[1] - uitex_portH;
+            fr(j,4) {srcRect[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
+            mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
+            planeElems[planeElemi].inlet.pei    = pei_inlet;
+            planeElems[planeElemi].inlet.index  = i;
+            planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
+            planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
+            planeElemi++;
+          }
+          break;
+        case nid_numlit_b10w08:
+          fr(i,2) {destPos[i] = destRect[i] = ndod[ndodi+1+i].p;}
+          fr(i,2) {destRect[i+2] = destRect[i] + nddef.size[i];}
+          srcRect[0] = srcRect[2] = uitex_numLitBackcolor_x;
+          srcRect[1] = srcRect[3] = uitex_numLitBackcolor_y;
+          mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
+          planeElems[planeElemi].numLit.pei   = pei_numLit;
+          planeElems[planeElemi].numLit.width = nddef.extraPECount;
+          planeElems[planeElemi].numLit.base  = 10;
+          planeElems[planeElemi].numLit.value = ndod[ndodi+ndodNumLitValStart].v;
           planeElemi++;
-        }
-        break;
-      default: _SHOULD_NOT_BE_HERE_;
+          // just fill it with eights for now
+          uitex_nmrlRect(srcRect, 8);
+          fr(i,8) {
+            mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
+            planeElems[planeElemi].numeric.pei   = pei_numeric;
+            planeElems[planeElemi].numeric.value = 8;
+            destPos[0] += fingerUnit;
+            planeElemi++;
+          }
+          break;
+        default: _SHOULD_NOT_BE_HERE_;
+      }
+      if (planeElemi > planeElemCount+1) _SHOULD_NOT_BE_HERE_;
     }
-    if (planeElemi > planeElemCount+1) _SHOULD_NOT_BE_HERE_;
+  }
+  
+  // recenter all planeElems if significant drifting has occurred
+  {
+    float meanPos[2] = {0};
+    fr(i,planeElemCount) {
+      meanPos[0] += peVertData[i*16];
+      meanPos[1] += peVertData[i*16+1];
+      meanPos[0] += peVertData[i*16+8];
+      meanPos[1] += peVertData[i*16+9];
+    }
+    const float offset[2] = {
+      floor(-meanPos[0] / (planeElemCount*2)),
+      floor(-meanPos[1] / (planeElemCount*2))
+    };
+    const float recenterThresh = 5555; // arbitrary
+    if (fabs(offset[0]) > recenterThresh || fabs(offset[1]) > recenterThresh) {
+      fr(i,planeElemCount) {moveVertRect(&peVertData[i*16], offset);}
+    }
   }
   
   resetPlaneRect();
-  printf("planeRect: ");
-  printRect(planeRect);
   
   // indx data
   setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount, gcVertDataStart);
@@ -411,13 +445,13 @@ void initUi() {
 }
 
 
-float newCurs_3[3]       = {0}; // cursor state relative to screen
-float oldCurs_3[3]       = {0};
-float clickDnCurs_3[3]   = {0};
-float newScroll_2[2]     = {0}; // plane center to screen center difference
-float oldScroll_2[2]     = {0};
-float clickDnScroll_2[2] = {0};
-float scrollVel_2[2]     = {0};
+float newCurs_3[3]       = {0,0}; // cursor state relative to screen
+float oldCurs_3[3]       = {0,0};
+float clickDnCurs_3[3]   = {0,0};
+float newScroll_2[2]     = {0,0}; // plane center to screen center difference
+float oldScroll_2[2]     = {1,1}; // dif to trigger scroll on start
+float clickDnScroll_2[2] = {0,0};
+float scrollVel_2[2]     = {0,0};
 
 typedef void (*cursEventHandler)(void *data);
 void doNothing(void *data) {}
