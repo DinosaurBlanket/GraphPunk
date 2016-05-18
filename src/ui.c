@@ -143,7 +143,10 @@ const GLbitfield bufferStorageFlags =
   GL_MAP_COHERENT_BIT
 ;
 
-#define gcButtonCount        10
+#define gcButtonCount  10
+#define gcButtonSide   ((uitex_gcRect[3] - uitex_gcRect[1])/2)
+float   gcRect[4] = {0,0,0,0};
+
 #define gcVertDataStart       0
 #define gcIndxDataStart       0
 #define gcVertDataCount     (gcButtonCount*16)
@@ -360,7 +363,6 @@ void initUi() {
       if (planeElemi > planeElemCount+1) _SHOULD_NOT_BE_HERE_;
     }
   }
-  
   // recenter all planeElems if significant drifting has occurred
   {
     float meanPos[2] = {0};
@@ -374,15 +376,40 @@ void initUi() {
       floor(-meanPos[0] / (planeElemCount*2)),
       floor(-meanPos[1] / (planeElemCount*2))
     };
-    const float recenterThresh = 5555; // arbitrary
-    if (fabs(offset[0]) > recenterThresh || fabs(offset[1]) > recenterThresh) {
+    const float thresh = 5555; // arbitrary
+    if (fabs(offset[0]) > thresh || fabs(offset[1]) > thresh) {
       fr(i,planeElemCount) {moveVertRect(&peVertData[i*16], offset);}
     }
   }
   
   resetPlaneRect();
   
+  // global controls vertex data initialization
+  {
+    gcRect[0] = halfVideoSize[0] - (uitex_gcRect[2] - uitex_gcRect[0]);
+    gcRect[1] = halfVideoSize[1] - gcButtonSide;
+    gcRect[2] = halfVideoSize[0];
+    gcRect[3] = halfVideoSize[1];
+    float destPos[2] = {gcRect[0], gcRect[1]};
+    float srcRect[4] = {
+      uitex_gcRect[0],
+      uitex_gcRect[1],
+      uitex_gcRect[0] + gcButtonSide,
+      uitex_gcRect[1] + gcButtonSide
+    };
+    float *gcVertData = &vertData[gcVertDataStart];
+    fr(i, gcButtonCount) {
+      mapTexRectToVertPos(&gcVertData[i*16], destPos, srcRect);
+      destPos[0] += gcButtonSide;
+      srcRect[0] += gcButtonSide;
+      srcRect[2] += gcButtonSide;
+    }
+  }
+  
+  
+  
   // indx data
+  setRectElems(&indxData[peIndxDataStart], planeElemCap*6, peVertDataStart/4);
   setRectElems(&indxData[gcIndxDataStart], gcIndxDataCount, gcVertDataStart);
   {
     const uint32_t backElems[borderIndxDataCount] = {
@@ -392,7 +419,6 @@ void initUi() {
       indxData[borderIndxDataStart+i] = borderVertDataStart/4 + backElems[i];
     }
   }
-  setRectElems(&indxData[peIndxDataStart], planeElemCap*6, peVertDataStart/4);
   
   #if LOG_UI_BUFFERS
   puts("\n\n\tvertData");
@@ -492,6 +518,8 @@ void clickUp(int posX, int posY) {
 
 //float screenViewRect[4] = {0}; // xyxy, bl tr, relative to plane center
 bool redrawPlane = true;
+bool redrawGc    = true;
+
 
 void perFrame(const uint32_t curFrame) {
   fr(i,2) {
@@ -506,7 +534,7 @@ void perFrame(const uint32_t curFrame) {
       redrawPlane = true;
     }
   }
-  //if (redrawPlane || redrawGc) {
+  if (redrawPlane || redrawGc) {
     if (redrawPlane) {
       glClear(GL_COLOR_BUFFER_BIT);
       glUniform2f(unif_scroll, newScroll_2[0], newScroll_2[1]);_glec
@@ -518,8 +546,15 @@ void perFrame(const uint32_t curFrame) {
       );_glec
       redrawPlane = false;
     }
-  //  drawGc();
-  //}
+    glUniform2f(unif_scroll, 0, 0);_glec
+    glDrawElements(
+      GL_TRIANGLES,
+      gcIndxDataCount,
+      GL_UNSIGNED_INT,
+      (const GLvoid*) (gcIndxDataStart*sizeof(uint32_t))
+    );_glec
+    redrawGc = false;
+  }
   fr(i,3) {oldCurs_3[i] = newCurs_3[i];}
   fr(i,2) {oldScroll_2[i] = newScroll_2[i];}
   glFinish();
