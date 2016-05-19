@@ -103,6 +103,12 @@ void mapTexRectToVertRect(
   destVertData[14] = srcRect[2];
   destVertData[15] = srcRect[1];
 }
+void shiftTexRectV(float vertData[16], const int move) {
+  vertData[ 3] += move;
+  vertData[ 7] += move;
+  vertData[11] += move;
+  vertData[15] += move;
+}
 void setRectElems(
   uint32_t      *elems,
   const uint32_t elemsSize,
@@ -146,6 +152,27 @@ const GLbitfield bufferStorageFlags =
 #define gcButtonCount  10
 #define gcButtonSide   ((uitex_gcRect[3] - uitex_gcRect[1])/2)
 float   gcRect[4] = {0,0,0,0};
+enum gcButtonIds {
+  gcbi_play,
+  gcbi_step,
+  gcbi_compile,
+  gcbi_zoomVideo,
+  gcbi_zoomPlane,
+  gcbi_branch,
+  gcbi_lock,
+  gcbi_revert,
+  gcbi_save,
+  gcbi_exit,
+  gcbi_none
+};
+int gcbiPressed = -1;
+bool togPlaying     = false;
+bool togActOnBranch = false;
+bool togLocked      = false;
+bool menuOpenZoomVideo = false;
+bool menuOpenZoomPlane = false;
+bool menuOpenRevert    = false;
+
 
 #define gcVertDataStart       0
 #define gcIndxDataStart       0
@@ -470,19 +497,25 @@ void initUi() {
   );_glec
 }
 
-
-float newCurs_3[3]       = {0,0}; // cursor state relative to screen
-float oldCurs_3[3]       = {0,0};
-float clickDnCurs_3[3]   = {0,0};
+float newCurs_3[3]       = {0,0,0}; // cursor state relative to screen
+float oldCurs_3[3]       = {0,0,0};
+float clickDnCurs_3[3]   = {0,0,0};
 float newScroll_2[2]     = {0,0}; // plane center to screen center difference
 float oldScroll_2[2]     = {1,1}; // dif to trigger scroll on start
 float clickDnScroll_2[2] = {0,0};
 float scrollVel_2[2]     = {0,0};
 
+bool redrawPlane = true;
+bool redrawGc    = true;
+
 typedef void (*cursEventHandler)(void *data);
 void doNothing(void *data) {}
+void onClickDnMain(void *data);
+cursEventHandler onClickDn = onClickDnMain;
 cursEventHandler onDrag    = doNothing;
 cursEventHandler onClickUp = doNothing;
+
+
 
 void onDragScroll(void *data) {
   fr(i,2) {
@@ -497,14 +530,134 @@ void corneredToCentered(float centered[2], const int cX, const int cY) {
   centered[0] =  cX - halfVideoSize[0];
   centered[1] = -cY + halfVideoSize[1];
 }
+bool pointIsInRect(const float r[4], const float p[2]) {
+  return (p[0] >= r[0] && p[0] < r[2]) && (p[1] >= r[1] && p[1] < r[3]);
+}
+
+void onClickUpReleaseGcb(void *data) {
+  switch (gcbiPressed) {
+    case gcbi_play:
+    case gcbi_branch:
+    case gcbi_lock:
+    case gcbi_zoomVideo:
+    case gcbi_zoomPlane:
+    case gcbi_revert:
+      break;
+    case gcbi_step:
+    case gcbi_compile:
+    case gcbi_save:
+    case gcbi_exit:
+      shiftTexRectV(
+        &vertData[gcVertDataStart + gcbiPressed*16],
+        -gcButtonSide
+      );
+      redrawGc = true;
+      break;
+    default: _SHOULD_NOT_BE_HERE_;
+  }
+  gcbiPressed = gcbi_none;
+  onClickUp   = doNothing;
+}
+
+void onClickDnZoomVideoMenuOpen(void *data) {
+  // if the menu was clicked, then do menu action
+  // otherwise...
+  shiftTexRectV(&vertData[gcVertDataStart + gcbi_zoomVideo*16], -gcButtonSide);
+  menuOpenZoomVideo = false;
+  gcbiPressed = gcbi_none;
+  redrawGc = true;
+  onClickDn = onClickDnMain;
+  onClickDnMain(NULL);
+}
+void onClickDnZoomPlaneMenuOpen(void *data) {
+  // if the menu was clicked, then do menu action
+  // otherwise...
+  shiftTexRectV(&vertData[gcVertDataStart + gcbi_zoomPlane*16], -gcButtonSide);
+  menuOpenZoomPlane = false;
+  gcbiPressed = gcbi_none;
+  redrawGc = true;
+  onClickDn = onClickDnMain;
+  onClickDnMain(NULL);
+}
+void onClickDnRevertMenuOpen(void *data) {
+  // if the menu was clicked, then do menu action
+  // otherwise...
+  shiftTexRectV(&vertData[gcVertDataStart + gcbi_revert*16], -gcButtonSide);
+  menuOpenRevert = false;
+  gcbiPressed = gcbi_none;
+  redrawGc = true;
+  onClickDn = onClickDnMain;
+  onClickDnMain(NULL);
+}
+
+void onClickDnMain(void *data) {
+  if (pointIsInRect(gcRect, clickDnCurs_3)) {
+    gcbiPressed = (clickDnCurs_3[0] - gcRect[0])/gcButtonSide;
+    float texShift = 0;
+    switch (gcbiPressed) {
+      case gcbi_play:
+        if (togPlaying) {togPlaying = false; texShift = -gcButtonSide;}
+        else            {togPlaying = true;  texShift =  gcButtonSide;}
+        onClickUp = onClickUpReleaseGcb;
+        break;
+      case gcbi_branch:
+        if (togActOnBranch) {togActOnBranch = false; texShift = -gcButtonSide;}
+        else                {togActOnBranch = true;  texShift =  gcButtonSide;}
+        onClickUp = onClickUpReleaseGcb;
+        break;
+      case gcbi_lock:
+        if (togLocked) {togLocked = false; texShift = -gcButtonSide;}
+        else           {togLocked = true;  texShift =  gcButtonSide;}
+        onClickUp = onClickUpReleaseGcb;
+        break;
+      case gcbi_zoomVideo:
+        if (menuOpenZoomVideo) _SHOULD_NOT_BE_HERE_;
+        menuOpenZoomVideo = true; texShift = gcButtonSide;
+        onClickDn = onClickDnZoomVideoMenuOpen;
+        break;
+      case gcbi_zoomPlane:
+        if (menuOpenZoomPlane) _SHOULD_NOT_BE_HERE_;
+        menuOpenZoomPlane = true; texShift = gcButtonSide;
+        onClickDn = onClickDnZoomPlaneMenuOpen;
+        break;
+      case gcbi_revert:
+        if (menuOpenRevert)    _SHOULD_NOT_BE_HERE_;
+        menuOpenRevert    = true; texShift = gcButtonSide;
+        onClickDn = onClickDnRevertMenuOpen;
+        break;
+      case gcbi_step:
+        if (togPlaying) {
+          togPlaying = false;
+          shiftTexRectV(
+            &vertData[gcVertDataStart + gcbi_play*16],
+            -gcButtonSide
+          );
+        }
+      case gcbi_compile:
+      case gcbi_save:
+      case gcbi_exit:
+        texShift  = gcButtonSide;
+        onClickUp = onClickUpReleaseGcb;
+        break;
+      default: _SHOULD_NOT_BE_HERE_;
+    }
+    shiftTexRectV(&vertData[gcVertDataStart + gcbiPressed*16], texShift);
+    onDrag    = doNothing;
+    redrawGc  = true;
+  }
+  else {
+    fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
+    fr(i,2) {scrollVel_2[i] = 0;}
+    onDrag    = onDragScroll;
+    onClickUp = onClickUpScroll;
+  }
+}
+
 void clickDn(int posX, int posY) {
   corneredToCentered(newCurs_3, posX, posY);
   newCurs_3[2] = 1.0f;
   fr(i,3) {clickDnCurs_3[i] = newCurs_3[i];}
-  fr(i,2) {clickDnScroll_2[i] = newScroll_2[i];}
-  fr(i,2) {scrollVel_2[i] = 0;}
-  onDrag    = onDragScroll;
-  onClickUp = onClickUpScroll;
+  onClickDn(NULL);
 }
 void curMove(int posX, int posY) {
   corneredToCentered(newCurs_3, posX, posY);
@@ -515,10 +668,6 @@ void clickUp(int posX, int posY) {
   newCurs_3[2] = 0;
   onClickUp(NULL);
 }
-
-//float screenViewRect[4] = {0}; // xyxy, bl tr, relative to plane center
-bool redrawPlane = true;
-bool redrawGc    = true;
 
 
 void perFrame(const uint32_t curFrame) {
@@ -561,7 +710,7 @@ void perFrame(const uint32_t curFrame) {
 }
 
 
-void exitUi(){
+void exitUi() {
   // write back to disk before freeing
   free(planeElems);
 }

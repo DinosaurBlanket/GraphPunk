@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
     curFrame++;
 	}
   
+  exitUi();
 	SDL_GL_DeleteContext(GlContext);_sdlec
 	SDL_Quit();_sdlec
 	return 0;
