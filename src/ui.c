@@ -586,9 +586,9 @@ void onClickDnWithMenuOpen(void *data) {
   // if the menu was clicked, then do menu action
   // otherwise...
   shiftTexRectV(&vertData[gcVertDataStart + gcbiPressed*16], -gcButtonSide);
-  menuOpen = mi_none;
   gcbiPressed = gcbi_none;
   redrawGc = true;
+  menuOpen = mi_none;
   onClickDn = onClickDnMain;
   onClickDnMain(NULL);
 }
@@ -618,18 +618,21 @@ void onClickDnMain(void *data) {
         menuOpen = mi_zoomVideo;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
+        onClickUp = doNothing;
         break;
       case gcbi_zoomPlane:
         if (menuOpen == mi_zoomPlane) _SHOULD_NOT_BE_HERE_;
         menuOpen = mi_zoomPlane;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
+        onClickUp = doNothing;
         break;
       case gcbi_revert:
         if (menuOpen == mi_revert) _SHOULD_NOT_BE_HERE_;
         menuOpen = mi_revert;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
+        onClickUp = doNothing;
         break;
       case gcbi_step:
         if (togPlaying) {
