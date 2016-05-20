@@ -351,6 +351,22 @@ void initUi() {
           planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
           planeElems[planeElemi].nbase.nid = nid;
           planeElemi++;
+          // outlet
+          if (nddef.outletCount) {
+            destRect[0] = nodeBasePos[0];
+            destRect[1] = nodeBasePos[1] + nddef.size[1];
+            destRect[2] = destRect[0] + uitex_portW;
+            destRect[3] = destRect[1] + uitex_portH;
+            srcRect[0]  = uitex_inletRects[nddef.outType*4    ];
+            srcRect[1]  = uitex_inletRects[nddef.outType*4 + 3];
+            srcRect[2]  = uitex_inletRects[nddef.outType*4 + 2];
+            srcRect[3]  = uitex_inletRects[nddef.outType*4 + 1];
+            mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
+            planeElems[planeElemi].outlet.pei  = pei_outlet;
+            planeElems[planeElemi].outlet.type = nddef.outType;
+            // outlet.conode is set with the corresponding inlet
+            planeElemi++;
+          }
           // inlets
           fr(i, nddef.inletCount) {
             destPos[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
@@ -360,7 +376,9 @@ void initUi() {
             planeElems[planeElemi].inlet.pei    = pei_inlet;
             planeElems[planeElemi].inlet.index  = i;
             planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
-            planeElems[planeElemi].inlet.conode = ndod[ndodi+ndodChildStart+i].c;
+            int conode = ndod[ndodi + ndodChildStart + i].c;
+            planeElems[planeElemi].inlet.conode = conode;
+            planeElems[conode].outlet.conode = planeElemi;
             planeElemi++;
           }
           break;

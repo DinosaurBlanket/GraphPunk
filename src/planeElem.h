@@ -22,6 +22,12 @@ typedef struct {
 // There is always one line per inlet, but any number per outlet.
 // Moving a node will require looking through all inlets
 // to find lines connected to the node being moved.
+typedef struct {
+  uint8_t  pei;
+  uint8_t  type;         // data type
+  uint16_t _unused16_1;
+  uint32_t conode;       // offset into planeElems of connected node
+} outlet;
 
 typedef struct {
   uint8_t  pei;
@@ -51,13 +57,15 @@ typedef struct {
 
 typedef enum {
   pei_nface,    // node face, followed by inlets, if any
-  pei_inlet,    // always follows a nodeface or it's lef-adjacent inlet
+  pei_outlet,   // always follows a nodeface
+  pei_inlet,    // always follows an outlet or it's lef-adjacent inlet
   pei_numLit,   // followed by numerals
   pei_numeric   // follows anything that displays a number
 } planeElemId;
 typedef union {
   planeElemId pei;
   nodeBase    nbase;// previously nface
+  outlet      outlet;
   inlet       inlet;
   numLit      numLit;
   numeric     numeric;

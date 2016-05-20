@@ -12,6 +12,7 @@ void getNodeDef(nodeDef *def, uint32_t nodeId) {
       def->size[0]      = fingerUnit*2;
       def->size[1]      = fingerUnit;
       def->outType      = dt_num;
+      def->outletCount  = 1;
       def->inletCount   = 2;
       def->inTypes[0]   = dt_num;
       def->inTypes[1]   = dt_num;
@@ -24,6 +25,7 @@ void getNodeDef(nodeDef *def, uint32_t nodeId) {
       def->size[0]      = fingerUnit*2;
       def->size[1]      = fingerUnit;
       def->outType      = dt_noOut;
+      def->outletCount  = 0;
       def->inletCount   = 1;
       def->inTypes[0]   = dt_num;
       def->inletPos[0]  = 0;
@@ -34,6 +36,7 @@ void getNodeDef(nodeDef *def, uint32_t nodeId) {
       def->size[0]      = fingerUnit*8;
       def->size[1]      = fingerUnit;
       def->outType      = dt_num;
+      def->outletCount  = 1;
       def->inletCount   = 0;
       def->extraPECount = 8; // base 10, width 8
       def->ndodCount    = 4;
