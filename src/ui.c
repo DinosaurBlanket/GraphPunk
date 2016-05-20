@@ -169,9 +169,14 @@ int gcbiPressed = -1;
 bool togPlaying     = false;
 bool togActOnBranch = false;
 bool togLocked      = false;
-bool menuOpenZoomVideo = false;
-bool menuOpenZoomPlane = false;
-bool menuOpenRevert    = false;
+enum menuIds {
+  mi_zoomVideo,
+  mi_zoomPlane,
+  mi_revert,
+  mi_none
+};
+uint32_t menuOpen = mi_none;
+float openMenuRect[4];
 
 
 #define gcVertDataStart       0
@@ -331,7 +336,6 @@ void initUi() {
     nodeDef nddef = {{0}}; // {{}}??
     int planeElemi = 0;
     float nodeBasePos[2] = {0};
-    //float destPos[2]     = {0};
     float destRect[4]    = {0};
     float srcRect[4]     = {0};
     for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
@@ -578,31 +582,11 @@ void onClickUpReleaseGcb(void *data) {
   onClickUp   = doNothing;
 }
 
-void onClickDnZoomVideoMenuOpen(void *data) {
+void onClickDnWithMenuOpen(void *data) {
   // if the menu was clicked, then do menu action
   // otherwise...
-  shiftTexRectV(&vertData[gcVertDataStart + gcbi_zoomVideo*16], -gcButtonSide);
-  menuOpenZoomVideo = false;
-  gcbiPressed = gcbi_none;
-  redrawGc = true;
-  onClickDn = onClickDnMain;
-  onClickDnMain(NULL);
-}
-void onClickDnZoomPlaneMenuOpen(void *data) {
-  // if the menu was clicked, then do menu action
-  // otherwise...
-  shiftTexRectV(&vertData[gcVertDataStart + gcbi_zoomPlane*16], -gcButtonSide);
-  menuOpenZoomPlane = false;
-  gcbiPressed = gcbi_none;
-  redrawGc = true;
-  onClickDn = onClickDnMain;
-  onClickDnMain(NULL);
-}
-void onClickDnRevertMenuOpen(void *data) {
-  // if the menu was clicked, then do menu action
-  // otherwise...
-  shiftTexRectV(&vertData[gcVertDataStart + gcbi_revert*16], -gcButtonSide);
-  menuOpenRevert = false;
+  shiftTexRectV(&vertData[gcVertDataStart + gcbiPressed*16], -gcButtonSide);
+  menuOpen = mi_none;
   gcbiPressed = gcbi_none;
   redrawGc = true;
   onClickDn = onClickDnMain;
@@ -630,19 +614,22 @@ void onClickDnMain(void *data) {
         onClickUp = onClickUpReleaseGcb;
         break;
       case gcbi_zoomVideo:
-        if (menuOpenZoomVideo) _SHOULD_NOT_BE_HERE_;
-        menuOpenZoomVideo = true; texShift = gcButtonSide;
-        onClickDn = onClickDnZoomVideoMenuOpen;
+        if (menuOpen == mi_zoomVideo) _SHOULD_NOT_BE_HERE_;
+        menuOpen = mi_zoomVideo;
+        texShift = gcButtonSide;
+        onClickDn = onClickDnWithMenuOpen;
         break;
       case gcbi_zoomPlane:
-        if (menuOpenZoomPlane) _SHOULD_NOT_BE_HERE_;
-        menuOpenZoomPlane = true; texShift = gcButtonSide;
-        onClickDn = onClickDnZoomPlaneMenuOpen;
+        if (menuOpen == mi_zoomPlane) _SHOULD_NOT_BE_HERE_;
+        menuOpen = mi_zoomPlane;
+        texShift = gcButtonSide;
+        onClickDn = onClickDnWithMenuOpen;
         break;
       case gcbi_revert:
-        if (menuOpenRevert)    _SHOULD_NOT_BE_HERE_;
-        menuOpenRevert    = true; texShift = gcButtonSide;
-        onClickDn = onClickDnRevertMenuOpen;
+        if (menuOpen == mi_revert) _SHOULD_NOT_BE_HERE_;
+        menuOpen = mi_revert;
+        texShift = gcButtonSide;
+        onClickDn = onClickDnWithMenuOpen;
         break;
       case gcbi_step:
         if (togPlaying) {
