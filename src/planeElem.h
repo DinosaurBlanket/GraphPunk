@@ -57,7 +57,7 @@ typedef struct {
 
 typedef enum {
   pei_nface,    // node face, followed by inlets, if any
-  pei_outlet,   // always follows a nodeface
+  pei_outlet,   // always follows a face elements
   pei_inlet,    // always follows an outlet or it's lef-adjacent inlet
   pei_numLit,   // followed by numerals
   pei_numeric   // follows anything that displays a number

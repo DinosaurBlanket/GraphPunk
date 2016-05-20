@@ -331,7 +331,7 @@ void initUi() {
     nodeDef nddef = {{0}}; // {{}}??
     int planeElemi = 0;
     float nodeBasePos[2] = {0};
-    float destPos[2]     = {0};
+    //float destPos[2]     = {0};
     float destRect[4]    = {0};
     float srcRect[4]     = {0};
     for (int ndodi = 0; ndodi < ndcount; ndodi += nddef.ndodCount) {
@@ -344,46 +344,17 @@ void initUi() {
         case nid_div:
         case nid_output:
           // node face
-          fr(i,2) {destPos[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
+          fr(i,2) {destRect[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
           fr(i,4) {srcRect[i] = uitex_nodeFaces[nid*4 + i];}
-          mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
+          mapTexRectToVertPos(&peVertData[planeElemi*16], destRect, srcRect);
           planeElems[planeElemi].nbase.pei = pei_nface;
           planeElems[planeElemi].nbase.inletCount = nddef.inletCount;
           planeElems[planeElemi].nbase.nid = nid;
           planeElemi++;
-          // outlet
-          if (nddef.outletCount) {
-            destRect[0] = nodeBasePos[0];
-            destRect[1] = nodeBasePos[1] + nddef.size[1];
-            destRect[2] = destRect[0] + uitex_portW;
-            destRect[3] = destRect[1] + uitex_portH;
-            srcRect[0]  = uitex_inletRects[nddef.outType*4    ];
-            srcRect[1]  = uitex_inletRects[nddef.outType*4 + 3];
-            srcRect[2]  = uitex_inletRects[nddef.outType*4 + 2];
-            srcRect[3]  = uitex_inletRects[nddef.outType*4 + 1];
-            mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
-            planeElems[planeElemi].outlet.pei  = pei_outlet;
-            planeElems[planeElemi].outlet.type = nddef.outType;
-            // outlet.conode is set with the corresponding inlet
-            planeElemi++;
-          }
-          // inlets
-          fr(i, nddef.inletCount) {
-            destPos[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
-            destPos[1] = nodeBasePos[1] - uitex_portH;
-            fr(j,4) {srcRect[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
-            mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
-            planeElems[planeElemi].inlet.pei    = pei_inlet;
-            planeElems[planeElemi].inlet.index  = i;
-            planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
-            int conode = ndod[ndodi + ndodChildStart + i].c;
-            planeElems[planeElemi].inlet.conode = conode;
-            planeElems[conode].outlet.conode = planeElemi;
-            planeElemi++;
-          }
+          
           break;
         case nid_numlit_b10w08:
-          fr(i,2) {destPos[i] = destRect[i] = ndod[ndodi+1+i].p;}
+          fr(i,2) {destRect[i] = nodeBasePos[i] = ndod[ndodi+1+i].p;}
           fr(i,2) {destRect[i+2] = destRect[i] + nddef.size[i];}
           srcRect[0] = srcRect[2] = uitex_numLitBackcolor_x;
           srcRect[1] = srcRect[3] = uitex_numLitBackcolor_y;
@@ -396,14 +367,44 @@ void initUi() {
           // just fill it with eights for now
           uitex_nmrlRect(srcRect, 8);
           fr(i,8) {
-            mapTexRectToVertPos(&peVertData[planeElemi*16], destPos, srcRect);
+            mapTexRectToVertPos(&peVertData[planeElemi*16], destRect, srcRect);
             planeElems[planeElemi].numeric.pei   = pei_numeric;
             planeElems[planeElemi].numeric.value = 8;
-            destPos[0] += fingerUnit;
+            destRect[0] += fingerUnit;
             planeElemi++;
           }
           break;
         default: _SHOULD_NOT_BE_HERE_;
+      }
+      // outlet
+      if (nddef.outletCount) {
+        destRect[0] = nodeBasePos[0];
+        destRect[1] = nodeBasePos[1] + nddef.size[1];
+        destRect[2] = destRect[0] + uitex_portW;
+        destRect[3] = destRect[1] + uitex_portH;
+        srcRect[0]  = uitex_inletRects[nddef.outType*4    ];
+        srcRect[1]  = uitex_inletRects[nddef.outType*4 + 3];
+        srcRect[2]  = uitex_inletRects[nddef.outType*4 + 2];
+        srcRect[3]  = uitex_inletRects[nddef.outType*4 + 1];
+        mapTexRectToVertRect(&peVertData[planeElemi*16], destRect, srcRect);
+        planeElems[planeElemi].outlet.pei  = pei_outlet;
+        planeElems[planeElemi].outlet.type = nddef.outType;
+        // outlet.conode is set with the corresponding inlet
+        planeElemi++;
+      }
+      // inlets
+      fr(i, nddef.inletCount) {
+        destRect[0] = nodeBasePos[0] + nddef.inletPos[i]*fingerUnit;
+        destRect[1] = nodeBasePos[1] - uitex_portH;
+        fr(j,4) {srcRect[j] = uitex_inletRects[nddef.inTypes[i]*4 + j];}
+        mapTexRectToVertPos(&peVertData[planeElemi*16], destRect, srcRect);
+        planeElems[planeElemi].inlet.pei    = pei_inlet;
+        planeElems[planeElemi].inlet.index  = i;
+        planeElems[planeElemi].inlet.type   = nddef.inTypes[i];
+        int conode = ndod[ndodi + ndodChildStart + i].c;
+        planeElems[planeElemi].inlet.conode = conode;
+        planeElems[conode].outlet.conode = planeElemi;
+        planeElemi++;
       }
       if (planeElemi > planeElemCount+1) _SHOULD_NOT_BE_HERE_;
     }
