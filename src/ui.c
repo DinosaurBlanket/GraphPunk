@@ -418,9 +418,9 @@ void initUi() {
     float meanPos[2] = {0};
     fr(i,planeElemCount) {
       meanPos[0] += peVertData[i*16];
-      meanPos[1] += peVertData[i*16+1];
-      meanPos[0] += peVertData[i*16+8];
-      meanPos[1] += peVertData[i*16+9];
+      meanPos[1] += peVertData[i*16 + 1];
+      meanPos[0] += peVertData[i*16 + 8];
+      meanPos[1] += peVertData[i*16 + 9];
     }
     const float offset[2] = {
       floor(-meanPos[0] / (planeElemCount*2)),
@@ -570,10 +570,7 @@ void onClickUpReleaseGcb(void *data) {
     case gcbi_compile:
     case gcbi_save:
     case gcbi_exit:
-      shiftTexRectV(
-        &vertData[gcVertDataStart + gcbiPressed*16],
-        -gcButtonSide
-      );
+      shiftTexRectV(&vertData[gcVertDataStart + gcbiPressed*16], -gcButtonSide);
       redrawGc = true;
       break;
     default: _SHOULD_NOT_BE_HERE_;
@@ -614,21 +611,18 @@ void onClickDnMain(void *data) {
         onClickUp = onClickUpReleaseGcb;
         break;
       case gcbi_zoomVideo:
-        if (menuOpen == mi_zoomVideo) _SHOULD_NOT_BE_HERE_;
         menuOpen = mi_zoomVideo;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
         onClickUp = doNothing;
         break;
       case gcbi_zoomPlane:
-        if (menuOpen == mi_zoomPlane) _SHOULD_NOT_BE_HERE_;
         menuOpen = mi_zoomPlane;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
         onClickUp = doNothing;
         break;
       case gcbi_revert:
-        if (menuOpen == mi_revert) _SHOULD_NOT_BE_HERE_;
         menuOpen = mi_revert;
         texShift = gcButtonSide;
         onClickDn = onClickDnWithMenuOpen;
@@ -638,8 +632,7 @@ void onClickDnMain(void *data) {
         if (togPlaying) {
           togPlaying = false;
           shiftTexRectV(
-            &vertData[gcVertDataStart + gcbi_play*16],
-            -gcButtonSide
+            &vertData[gcVertDataStart + gcbi_play*16], -gcButtonSide
           );
         }
       case gcbi_compile:
